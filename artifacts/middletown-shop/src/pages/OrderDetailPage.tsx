@@ -67,11 +67,11 @@ export default function OrderDetailPage() {
         <div>
           <Link to="/orders" className="text-sm text-muted-foreground hover:text-primary mb-2 inline-block">← Back to orders</Link>
           <h1 className="text-xl font-bold text-foreground">{order.orderId}</h1>
-          <p className="text-sm text-muted-foreground">Placed on {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" }) : "—"}</p>
+          <p className="text-sm text-muted-foreground">Placed on {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString("en-GH", { year: "numeric", month: "long", day: "numeric" }) : "—"}</p>
         </div>
         <div className="flex flex-col items-end gap-2">
           <OrderStatusBadge status={order.status} />
-          <span className="text-xl font-bold text-primary">₦{order.totalAmount.toLocaleString()}</span>
+          <span className="text-xl font-bold text-primary">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")}</span>
         </div>
       </div>
 
@@ -139,9 +139,9 @@ export default function OrderDetailPage() {
                     className="w-12 h-12 object-cover rounded-lg border border-border flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">Qty: {item.quantity} × ₦{item.price.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Qty: {item.quantity} × ₵{Number(item.price || 0).toLocaleString("en-GH")}</p>
                   </div>
-                  <span className="text-sm font-bold text-foreground">₦{(item.price * item.quantity).toLocaleString()}</span>
+                  <span className="text-sm font-bold text-foreground">₵{Number((item.price || 0) * item.quantity).toLocaleString("en-GH")}</span>
                 </div>
               ))}
             </div>
@@ -167,7 +167,7 @@ export default function OrderDetailPage() {
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total</span>
-                <span className="font-bold text-primary">₦{order.totalAmount.toLocaleString()}</span>
+                <span className="font-bold text-primary">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status</span>

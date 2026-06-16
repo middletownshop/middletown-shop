@@ -100,7 +100,7 @@ export default function ProductsPage() {
             </div>
             {/* Price range */}
             <div className="mb-5">
-              <h4 className="text-sm font-semibold text-foreground mb-2">Price Range (₦)</h4>
+              <h4 className="text-sm font-semibold text-foreground mb-2">Price Range (₵)</h4>
               <div className="flex gap-2">
                 <input type="number" value={priceMin} onChange={e => setPriceMin(e.target.value)} placeholder="Min" data-testid="input-price-min"
                   className="w-full border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />

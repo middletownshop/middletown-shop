@@ -33,7 +33,7 @@ export default function CartPage() {
               />
               <div className="flex-1 min-w-0">
                 <Link to={`/products/${item.productId}`} className="font-medium text-foreground hover:text-primary line-clamp-2 text-sm">{item.name}</Link>
-                <p className="text-primary font-bold mt-1">₦{item.price.toLocaleString()}</p>
+                <p className="text-primary font-bold mt-1">₵{Number(item.price || 0).toLocaleString("en-GH")}</p>
                 <div className="flex items-center gap-3 mt-2">
                   <div className="flex items-center border border-border rounded-lg overflow-hidden">
                     <button onClick={() => updateQuantity(item.productId, item.quantity - 1)} data-testid={`button-qty-minus-${item.productId}`}
@@ -49,7 +49,7 @@ export default function CartPage() {
                 </div>
               </div>
               <div className="text-right flex-shrink-0">
-                <span className="font-bold text-foreground">₦{(item.price * item.quantity).toLocaleString()}</span>
+                <span className="font-bold text-foreground">₵{Number((item.price || 0) * item.quantity).toLocaleString("en-GH")}</span>
               </div>
             </div>
           ))}
@@ -63,14 +63,14 @@ export default function CartPage() {
               {cartItems.map(item => (
                 <div key={item.productId} className="flex justify-between text-muted-foreground">
                   <span className="truncate max-w-[140px]">{item.name} x{item.quantity}</span>
-                  <span>₦{(item.price * item.quantity).toLocaleString()}</span>
+                  <span>₵{Number((item.price || 0) * item.quantity).toLocaleString("en-GH")}</span>
                 </div>
               ))}
             </div>
             <div className="border-t border-border pt-3 mb-5">
               <div className="flex justify-between font-bold text-foreground">
                 <span>Total</span>
-                <span data-testid="text-cart-total">₦{cartTotal.toLocaleString()}</span>
+                <span data-testid="text-cart-total">₵{Number(cartTotal || 0).toLocaleString("en-GH")}</span>
               </div>
             </div>
             <Link to="/checkout" data-testid="link-checkout"

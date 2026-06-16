@@ -42,7 +42,7 @@ export default function AdminDashboard() {
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, icon: <Users className="w-6 h-6 text-blue-600" />, color: "bg-blue-50 border-blue-100", href: "/admin/users" },
     { label: "Total Orders", value: stats.totalOrders, icon: <Package className="w-6 h-6 text-purple-600" />, color: "bg-purple-50 border-purple-100", href: "/admin/orders" },
-    { label: "Total Revenue", value: `₦${stats.totalRevenue.toLocaleString()}`, icon: <DollarSign className="w-6 h-6 text-green-600" />, color: "bg-green-50 border-green-100", href: "/admin/orders" },
+    { label: "Total Revenue", value: `₵${Number(stats.totalRevenue || 0).toLocaleString("en-GH")}`, icon: <DollarSign className="w-6 h-6 text-green-600" />, color: "bg-green-50 border-green-100", href: "/admin/orders" },
     { label: "Pending Orders", value: stats.pendingOrders, icon: <Clock className="w-6 h-6 text-orange-600" />, color: "bg-orange-50 border-orange-100", href: "/admin/orders" },
     { label: "Completed", value: stats.completedOrders, icon: <TrendingUp className="w-6 h-6 text-emerald-600" />, color: "bg-emerald-50 border-emerald-100", href: "/admin/orders" },
   ];
@@ -117,10 +117,10 @@ export default function AdminDashboard() {
               ) : recentOrders.map(order => (
                 <tr key={order.id} className="border-t border-border hover:bg-muted/30 transition-colors">
                   <td className="px-5 py-3 font-medium text-foreground">{order.orderId}</td>
-                  <td className="px-5 py-3 text-muted-foreground">{order.customerName}</td>
-                  <td className="px-5 py-3 font-bold text-foreground">₦{order.totalAmount.toLocaleString()}</td>
-                  <td className="px-5 py-3"><OrderStatusBadge status={order.status} /></td>
-                  <td className="px-5 py-3 text-muted-foreground">{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : "—"}</td>
+                  <td className="px-5 py-3 text-muted-foreground">{order?.customerName || "Unknown Customer"}</td>
+                  <td className="px-5 py-3 font-bold text-foreground">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")}</td>
+                  <td className="px-5 py-3"><OrderStatusBadge status={order?.status || "pending"} /></td>
+                  <td className="px-5 py-3 text-muted-foreground">{order?.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : "—"}</td>
                   <td className="px-5 py-3">
                     <Link to={`/admin/orders`} className="text-primary text-xs hover:underline">Manage</Link>
                   </td>

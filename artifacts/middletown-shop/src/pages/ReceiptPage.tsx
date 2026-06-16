@@ -87,7 +87,7 @@ export default function ReceiptPage() {
               </div>
               <span className="font-bold text-xl text-primary">Middletown Shop</span>
             </div>
-            <p className="text-xs text-muted-foreground">Nigeria's Trusted Marketplace</p>
+            <p className="text-xs text-muted-foreground">Ghana's Trusted Marketplace</p>
           </div>
           <div className="text-right">
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Receipt</p>
@@ -128,8 +128,8 @@ export default function ReceiptPage() {
               <tr key={i} className="border-b border-border">
                 <td className="px-3 py-3 text-sm text-foreground">{item.name}</td>
                 <td className="px-3 py-3 text-sm text-center text-muted-foreground">{item.quantity}</td>
-                <td className="px-3 py-3 text-sm text-right text-muted-foreground">₦{item.price.toLocaleString()}</td>
-                <td className="px-3 py-3 text-sm text-right font-medium text-foreground">₦{(item.price * item.quantity).toLocaleString()}</td>
+                <td className="px-3 py-3 text-sm text-right text-muted-foreground">₵{Number(item.price || 0).toLocaleString("en-GH")}</td>
+                <td className="px-3 py-3 text-sm text-right font-medium text-foreground">₵{Number((item.price || 0) * item.quantity).toLocaleString("en-GH")}</td>
               </tr>
             ))}
           </tbody>
@@ -140,11 +140,11 @@ export default function ReceiptPage() {
           <div className="w-56">
             <div className="flex justify-between py-1 text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>₦{receipt.totalAmount.toLocaleString()}</span>
+              <span>₵{Number(receipt.totalAmount || 0).toLocaleString("en-GH")}</span>
             </div>
             <div className="flex justify-between py-2 border-t-2 border-foreground font-bold text-foreground">
               <span>Total Paid</span>
-              <span>₦{receipt.totalAmount.toLocaleString()}</span>
+              <span>₵{Number(receipt.totalAmount || 0).toLocaleString("en-GH")}</span>
             </div>
           </div>
         </div>
@@ -153,7 +153,7 @@ export default function ReceiptPage() {
         <div className="text-center text-xs text-muted-foreground border-t border-border pt-4">
           <p className="font-medium text-foreground mb-1">Thank you for shopping with Middletown Shop!</p>
           <p>This is an electronically generated receipt and requires no signature.</p>
-          <p className="mt-1">Powered by Paystack — Nigeria's trusted payment gateway.</p>
+          <p className="mt-1">Powered by Paystack — Ghana's trusted payment gateway.</p>
         </div>
       </div>
     </div>

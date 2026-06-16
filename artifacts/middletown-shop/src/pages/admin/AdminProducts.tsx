@@ -168,7 +168,7 @@ export default function AdminProducts() {
                   <td className="px-5 py-3">
                     <span className="capitalize text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">{p.category}</span>
                   </td>
-                  <td className="px-5 py-3 font-semibold text-foreground">₦{p.price.toLocaleString()}</td>
+                  <td className="px-5 py-3 font-semibold text-foreground">₵{Number(p.price || 0).toLocaleString("en-GH")}</td>
                   <td className="px-5 py-3 text-foreground">{p.stock}</td>
                   <td className="px-5 py-3">
                     <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${p.enabled ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
@@ -223,7 +223,7 @@ export default function AdminProducts() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-1">Price (₦) *</label>
+                  <label className="block text-sm font-medium text-foreground mb-1">Price (₵) *</label>
                   <input type="number" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: Number(e.target.value) }))} required data-testid="input-product-price"
                     className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
                 </div>

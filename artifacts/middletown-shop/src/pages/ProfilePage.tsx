@@ -115,7 +115,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-muted rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Wallet Balance</p>
-              <p className="text-lg font-bold text-foreground">₦{(userProfile?.walletBalance || 0).toLocaleString()}</p>
+              <p className="text-lg font-bold text-foreground">₵{Number(userProfile?.walletBalance || 0).toLocaleString("en-GH")}</p>
             </div>
             <div className="bg-muted rounded-lg p-3">
               <p className="text-xs text-muted-foreground">Account Type</p>

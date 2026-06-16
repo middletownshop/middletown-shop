@@ -76,7 +76,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-1 flex-1 leading-snug">{product.name}</h3>
         <div className="flex items-center justify-between mt-auto pt-2">
           <span className="text-base font-bold text-primary" data-testid={`text-price-${product.id}`}>
-            ₦{product.price.toLocaleString()}
+            ₵{Number(product.price || 0).toLocaleString("en-GH")}
           </span>
           <button
             onClick={handleAddToCart}

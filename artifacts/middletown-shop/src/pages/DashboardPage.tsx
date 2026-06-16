@@ -35,7 +35,7 @@ export default function DashboardPage() {
 
   const stats = [
     { label: "Total Orders", value: orders.length, icon: <Package className="w-5 h-5 text-blue-600" />, color: "bg-blue-50 border-blue-100" },
-    { label: "Wallet Balance", value: `₦${(userProfile?.walletBalance || 0).toLocaleString()}`, icon: <Wallet className="w-5 h-5 text-green-600" />, color: "bg-green-50 border-green-100" },
+    { label: "Wallet Balance", value: `₵${Number(userProfile?.walletBalance || 0).toLocaleString("en-GH")}`, icon: <Wallet className="w-5 h-5 text-green-600" />, color: "bg-green-50 border-green-100" },
     { label: "Notifications", value: unread, icon: <Bell className="w-5 h-5 text-orange-600" />, color: "bg-orange-50 border-orange-100" },
     { label: "Saved Items", value: userProfile?.savedProducts?.length || 0, icon: <ShoppingBag className="w-5 h-5 text-purple-600" />, color: "bg-purple-50 border-purple-100" },
   ];
@@ -79,7 +79,7 @@ export default function DashboardPage() {
                 <Link key={order.id} to={`/orders/${order.id}`} className="flex items-center justify-between gap-3 hover:bg-accent p-2 rounded-lg transition-colors group">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">{order.orderId}</p>
-                    <p className="text-xs text-muted-foreground">₦{order.totalAmount.toLocaleString()} · {order.items.length} item(s)</p>
+                    <p className="text-xs text-muted-foreground">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")} · {order.items.length} item(s)</p>
                   </div>
                   <OrderStatusBadge status={order.status} />
                 </Link>

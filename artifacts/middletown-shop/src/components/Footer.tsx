@@ -12,7 +12,7 @@ export default function Footer() {
             </div>
             <span className="text-white font-bold text-lg">Middletown Shop</span>
           </div>
-          <p className="text-sm text-gray-400 leading-relaxed">Nigeria's trusted marketplace for physical products, digital services, data bundles, and more.</p>
+          <p className="text-sm text-gray-400 leading-relaxed">Ghana's trusted marketplace for physical products, digital services, data bundles, and more.</p>
         </div>
         <div>
           <h4 className="text-white font-semibold mb-3 text-sm">Shop</h4>

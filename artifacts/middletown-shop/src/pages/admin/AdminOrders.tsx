@@ -98,7 +98,7 @@ export default function AdminOrders() {
                       <p className="font-medium text-foreground">{order.customerName}</p>
                       <p className="text-xs text-muted-foreground">{order.customerEmail}</p>
                     </td>
-                    <td className="px-5 py-3 font-bold text-foreground">₦{order.totalAmount.toLocaleString()}</td>
+                    <td className="px-5 py-3 font-bold text-foreground">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")}</td>
                     <td className="px-5 py-3">
                       <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${order.paymentVerified ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
                         {order.paymentVerified ? "Verified" : "Pending"}

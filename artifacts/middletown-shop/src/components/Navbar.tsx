@@ -47,7 +47,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-border">
       {/* Top bar */}
       <div className="bg-primary text-primary-foreground text-xs py-1 px-4 flex justify-between items-center">
-        <span>Welcome to Middletown Shop — Nigeria's trusted marketplace</span>
+        <span>Welcome to Middletown Shop — Ghana's trusted marketplace</span>
         <div className="flex gap-4">
           {!user && (
             <>

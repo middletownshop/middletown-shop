@@ -54,7 +54,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>{order.items.length} item(s)</span>
-                    <span className="font-semibold text-foreground">₦{order.totalAmount.toLocaleString()}</span>
+                    <span className="font-semibold text-foreground">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")}</span>
                     <span>{order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : "—"}</span>
                   </div>
                   <div className="flex gap-2 mt-2 overflow-hidden">

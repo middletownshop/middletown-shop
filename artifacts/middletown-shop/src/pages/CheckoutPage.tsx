@@ -73,7 +73,7 @@ export default function CheckoutPage() {
         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
         email: user.email,
         amount: cartTotal * 100,
-        currency: "NGN",
+        currency: "GHS",
         ref: reference,
         metadata: { orderId, customerName: name },
         callback: async (response: { reference: string }) => {
@@ -88,7 +88,7 @@ export default function CheckoutPage() {
             });
 
             if (result.success) {
-              await markOrderPaid(orderId, response.reference, result.amount ?? cartTotal, result.currency ?? "NGN", result.paidAt ?? new Date().toISOString());
+              await markOrderPaid(orderId, response.reference, result.amount ?? cartTotal, result.currency ?? "GHS", result.paidAt ?? new Date().toISOString());
               // Create receipt
               const receiptId = await createReceipt({
                 receiptNumber: `RCP-${Date.now()}`,
@@ -212,17 +212,17 @@ export default function CheckoutPage() {
                       <p className="text-xs text-foreground truncate">{item.name}</p>
                       <p className="text-xs text-muted-foreground">x{item.quantity}</p>
                     </div>
-                    <span className="text-xs font-semibold">₦{(item.price * item.quantity).toLocaleString()}</span>
+                    <span className="text-xs font-semibold">₵{Number((item.price || 0) * item.quantity).toLocaleString("en-GH")}</span>
                   </div>
                 ))}
               </div>
               <div className="border-t border-border pt-3 mb-5">
                 <div className="flex justify-between text-sm text-muted-foreground mb-1">
-                  <span>Subtotal</span><span>₦{cartTotal.toLocaleString()}</span>
+                  <span>Subtotal</span><span>₵{Number(cartTotal || 0).toLocaleString("en-GH")}</span>
                 </div>
                 <div className="flex justify-between font-bold text-foreground">
                   <span>Total</span>
-                  <span data-testid="text-checkout-total">₦{cartTotal.toLocaleString()}</span>
+                  <span data-testid="text-checkout-total">₵{Number(cartTotal || 0).toLocaleString("en-GH")}</span>
                 </div>
               </div>
               <button type="submit" disabled={loading} data-testid="button-pay"
@@ -230,7 +230,7 @@ export default function CheckoutPage() {
                 {loading ? (
                   <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Processing...</>
                 ) : (
-                  <>Pay ₦{cartTotal.toLocaleString()}</>
+                  <>Pay ₵{Number(cartTotal || 0).toLocaleString("en-GH")}</>
                 )}
               </button>
             </div>

@@ -65,7 +65,7 @@ export default function AdminUsers() {
                       {u.role || "customer"}
                     </span>
                   </td>
-                  <td className="px-5 py-3 font-medium text-foreground">₦{(u.walletBalance || 0).toLocaleString()}</td>
+                  <td className="px-5 py-3 font-medium text-foreground">₵{Number(u.walletBalance || 0).toLocaleString("en-GH")}</td>
                   <td className="px-5 py-3 text-muted-foreground">
                     {u.createdAt?.toDate ? u.createdAt.toDate().toLocaleDateString() : "—"}
                   </td>

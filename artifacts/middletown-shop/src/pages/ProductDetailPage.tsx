@@ -133,7 +133,7 @@ export default function ProductDetailPage() {
             </div>
             <span className="text-sm text-muted-foreground">(No reviews yet)</span>
           </div>
-          <div className="text-3xl font-bold text-primary mb-4">₦{product.price.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-primary mb-4">₵{Number(product.price || 0).toLocaleString("en-GH")}</div>
 
           {/* Stock */}
           <div className="mb-4 flex items-center gap-2">

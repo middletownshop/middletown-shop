@@ -120,13 +120,13 @@ export default function TrackOrderPage() {
                     <p className="text-sm text-foreground truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                   </div>
-                  <span className="text-sm font-medium">₦{(item.price * item.quantity).toLocaleString()}</span>
+                  <span className="text-sm font-medium">₵{Number((item.price || 0) * item.quantity).toLocaleString("en-GH")}</span>
                 </div>
               ))}
             </div>
             <div className="flex justify-between mt-4 pt-3 border-t border-border">
               <span className="font-bold text-foreground">Total</span>
-              <span className="font-bold text-primary">₦{order.totalAmount.toLocaleString()}</span>
+              <span className="font-bold text-primary">₵{Number(order?.totalAmount || 0).toLocaleString("en-GH")}</span>
             </div>
           </div>
         </div>

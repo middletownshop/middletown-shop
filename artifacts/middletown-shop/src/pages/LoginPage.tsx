@@ -82,11 +82,11 @@ export default function LoginPage() {
           </div>
           <span className="text-2xl font-bold">Middletown Shop</span>
         </div>
-        <h2 className="text-4xl font-bold mb-4 leading-tight">Nigeria's Trusted Marketplace</h2>
+        <h2 className="text-4xl font-bold mb-4 leading-tight">Ghana's Trusted Marketplace</h2>
         <p className="text-blue-200 text-lg mb-8">Physical products, digital services, data bundles, airtime, and more — all in one place.</p>
         <div className="space-y-4">
           {[
-            { title: "Secure Payments", desc: "Powered by Paystack — Nigeria's leading payment gateway" },
+            { title: "Secure Payments", desc: "Powered by Paystack — Ghana's leading payment gateway" },
             { title: "Fast Delivery", desc: "Real-time order tracking from dispatch to doorstep" },
             { title: "Instant Digital Delivery", desc: "Digital products delivered immediately after payment" },
           ].map(f => (

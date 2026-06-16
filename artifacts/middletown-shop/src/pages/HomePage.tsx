@@ -161,7 +161,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-2xl font-bold mb-2">Start Shopping Today</h3>
-            <p className="text-white/80">Join thousands of Nigerians shopping on Middletown Shop. Secure, fast, reliable.</p>
+            <p className="text-white/80">Join thousands of Ghanaians shopping on Middletown Shop. Secure, fast, reliable.</p>
           </div>
           <Link to="/products" className="bg-white text-primary font-bold px-8 py-3 rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
             Shop Now
