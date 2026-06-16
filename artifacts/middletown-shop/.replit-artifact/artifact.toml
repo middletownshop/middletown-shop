@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Middletown Shop"
+version = "1.0.0"
+id = "artifacts/middletown-shop"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25797
+
+[services.development]
+run = "pnpm --filter @workspace/middletown-shop run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/middletown-shop", "run", "build" ]
+publicDir = "artifacts/middletown-shop/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25797"
+BASE_PATH = "/"
