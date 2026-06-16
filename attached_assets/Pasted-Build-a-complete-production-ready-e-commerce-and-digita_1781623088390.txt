@@ -1,0 +1,314 @@
+Build a complete production-ready e-commerce and digital services platform called "Middletown Shop".
+
+Tech Stack:
+
+* React
+* TypeScript
+* Vite
+* Tailwind CSS
+* Firebase Authentication
+* Firestore Database
+* Firebase Storage
+* Paystack Integration
+* React Router
+* Responsive Mobile First Design
+
+Important:
+
+* Generate clean production-ready code.
+* No demo data.
+* No mock payment logic.
+* No broken imports.
+* No placeholder pages.
+* Ready for GitHub deployment.
+* Ready for Vercel deployment.
+
+BUSINESS MODEL
+
+The platform must support:
+
+* Physical products
+* Digital products
+* Data bundles
+* Airtime
+* Utility payments
+* Services
+
+AUTHENTICATION
+
+* Email signup
+* Email login
+* Password reset
+* User profiles
+* Protected routes
+* Firebase Authentication
+
+USER ROLES
+
+* Admin
+* Customer
+
+Separate dashboards for each role.
+
+PRODUCT MANAGEMENT
+
+Admin must be able to:
+
+* Add products
+* Edit products
+* Delete products
+* Enable or disable products
+* Set stock quantity
+* Set product category
+* Set delivery options
+
+MULTIPLE PRODUCT IMAGES
+
+Each product must support:
+
+* Unlimited product images
+* Image gallery
+* Thumbnail navigation
+* Main image preview
+* Clickable images
+* Zoom image on click
+* Full-screen image viewer
+* Mobile swipe support
+
+Store images in Firebase Storage.
+
+PRODUCT PAGE
+
+Display:
+
+* Product name
+* Description
+* Category
+* Price
+* Product gallery
+* Multiple clickable images
+* Stock status
+* Delivery information
+* Customer reviews
+* Related products
+
+SHOPPING CART
+
+* Add to cart
+* Remove from cart
+* Update quantity
+* Save cart
+* Cart total
+
+CHECKOUT
+
+Customers must be able to:
+
+* Buy products directly on the website
+* Enter shipping information
+* Select payment method
+* Complete payment using Paystack
+
+PAYSTACK INTEGRATION
+
+Requirements:
+
+* Redirect to Paystack checkout
+* Verify payment server-side
+* Store transaction records
+* Prevent duplicate payments
+* Prevent duplicate wallet credits
+* Save payment reference
+
+ORDER SYSTEM
+
+After successful payment:
+
+* Create order automatically
+* Generate unique order ID
+* Generate invoice
+* Generate receipt
+* Save order in Firestore
+
+ORDER TRACKING
+
+Customers must be able to track products.
+
+Statuses:
+
+* Pending
+* Processing
+* Paid
+* Packed
+* Shipped
+* In Transit
+* Out For Delivery
+* Delivered
+* Cancelled
+
+Tracking page must show:
+
+* Order number
+* Current status
+* Status history
+* Estimated delivery date
+* Tracking timeline
+
+RECEIPT SYSTEM
+
+Generate receipt after every purchase.
+
+Receipt must include:
+
+* Receipt number
+* Customer details
+* Product details
+* Quantity
+* Amount paid
+* Date
+* Payment reference
+* Order ID
+
+Allow:
+
+* View receipt
+* Download receipt PDF
+* Print receipt
+
+CUSTOMER DASHBOARD
+
+Show:
+
+* Wallet balance
+* Orders
+* Receipts
+* Transaction history
+* Notifications
+* Saved products
+* Tracking information
+
+ADMIN DASHBOARD
+
+Statistics:
+
+* Total users
+* Total orders
+* Total revenue
+* Pending orders
+* Completed orders
+
+Management:
+
+* Products
+* Users
+* Orders
+* Payments
+* Receipts
+* Tracking updates
+
+ADMIN ORDER MANAGEMENT
+
+Admin can:
+
+* Update order status
+* Add tracking updates
+* Mark as shipped
+* Mark as delivered
+* Cancel order
+
+NOTIFICATIONS
+
+Send notifications for:
+
+* Payment success
+* Order creation
+* Order shipped
+* Order delivered
+* Wallet updates
+
+FIREBASE STRUCTURE
+
+users
+products
+productImages
+orders
+tracking
+transactions
+wallets
+receipts
+notifications
+settings
+
+SECURITY
+
+* Firestore security rules
+* Role-based access control
+* Admin-only pages protected
+* Server-side payment verification
+* Prevent duplicate transactions
+
+DESIGN
+
+Design inspired by Alibaba.
+
+Landing Page:
+
+* Professional homepage
+* Product categories
+* Featured products
+* Search bar
+* Hero banner
+* Blue and white branding
+
+Authentication Page:
+
+* Split screen design
+* Left side branding
+* Right side login form
+* Modern responsive layout
+
+Product Pages:
+
+* Large image gallery
+* Clickable thumbnails
+* Zoom images
+* Professional marketplace appearance
+
+PERFORMANCE
+
+* Lazy loading
+* Optimized images
+* Pagination
+* Responsive design
+* SEO-friendly structure
+
+DEPLOYMENT
+
+Generate:
+
+* Complete folder structure
+* package.json
+* vite.config.ts
+* firebase.ts
+* Firestore rules
+* Storage rules
+* Environment examples
+* GitHub-ready project
+* Vercel-ready project
+
+PHASES
+
+Phase 1: Folder Structure
+Phase 2: Firebase Setup
+Phase 3: Authentication
+Phase 4: Product Management
+Phase 5: Image Gallery System
+Phase 6: Shopping Cart
+Phase 7: Paystack Checkout
+Phase 8: Order Tracking
+Phase 9: Receipt Generation
+Phase 10: Customer Dashboard
+Phase 11: Admin Dashboard
+Phase 12: Deployment
+
+Build every phase completely before moving to the next phase.
