@@ -35,8 +35,8 @@ export default function ProductDetailPage() {
 
   const closeOnEsc = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setLightbox(false);
-    if (e.key === "ArrowRight") setActiveImg(i => (i + 1) % (product?.images.length || 1));
-    if (e.key === "ArrowLeft") setActiveImg(i => (i - 1 + (product?.images.length || 1)) % (product?.images.length || 1));
+    if (e.key === "ArrowRight") setActiveImg(i => (i + 1) % ((product?.images || []).length || 1));
+    if (e.key === "ArrowLeft") setActiveImg(i => (i - 1 + ((product?.images || []).length || 1)) % ((product?.images || []).length || 1));
   }, [product]);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    addToCart({ productId: product.id, name: product.name, price: product.price, quantity: qty, image: product.images[0] || "" });
+    addToCart({ productId: product.id, name: product.name, price: product.price, quantity: qty, image: (product.images || [])[0] || "" });
     toast.success(`${qty} item(s) added to cart`);
   };
 
@@ -74,7 +74,7 @@ export default function ProductDetailPage() {
     </div>
   );
 
-  const images = product.images.length > 0 ? product.images : ["https://placehold.co/600x600/e2e8f0/64748b?text=No+Image"];
+  const images = (product.images || []).length > 0 ? product.images : ["https://placehold.co/600x600/e2e8f0/64748b?text=No+Image"];
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">

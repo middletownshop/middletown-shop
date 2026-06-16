@@ -29,12 +29,12 @@ export default function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       price: product.price,
       quantity: 1,
-      image: product.images[0] || "",
+      image: (product.images || [])[0] || "",
     });
     toast.success("Added to cart");
   };
 
-  const image = product.images[0] || "https://placehold.co/300x300/e2e8f0/64748b?text=No+Image";
+  const image = (product.images || [])[0] || "https://placehold.co/300x300/e2e8f0/64748b?text=No+Image";
 
   return (
     <Link

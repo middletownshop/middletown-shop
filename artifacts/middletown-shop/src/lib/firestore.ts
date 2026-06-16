@@ -48,11 +48,18 @@ export async function getAllUsers(): Promise<UserProfile[]> {
 export async function getProducts(opts?: { category?: string; enabled?: boolean }): Promise<Product[]> {
   let q = query(collection(db, "products"), orderBy("createdAt", "desc"));
   if (opts?.enabled !== undefined) {
-    q = query(collection(db, "products"), where("enabled", "==", opts.enabled), orderBy("createdAt", "desc"));
+    // Simple where-only query to avoid composite index requirement; sort client-side
+    q = query(collection(db, "products"), where("enabled", "==", opts.enabled));
   }
   const snap = await getDocs(q);
   let items = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
   if (opts?.category) items = items.filter(p => p.category === opts.category);
+  // Sort newest first client-side
+  items.sort((a, b) => {
+    const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
+    const bTime = (b as any).createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
   return items;
 }
 
@@ -118,9 +125,15 @@ export async function getOrder(id: string): Promise<Order | null> {
 }
 
 export async function getCustomerOrders(customerId: string): Promise<Order[]> {
-  const q = query(collection(db, "orders"), where("customerId", "==", customerId), orderBy("createdAt", "desc"));
+  // where-only to avoid composite index; sort client-side
+  const q = query(collection(db, "orders"), where("customerId", "==", customerId));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+  const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+  return orders.sort((a, b) => {
+    const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
+    const bTime = (b as any).createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
 }
 
 export async function getAllOrders(): Promise<Order[]> {
@@ -198,9 +211,15 @@ export async function getReceipt(id: string): Promise<Receipt | null> {
 }
 
 export async function getCustomerReceipts(customerId: string): Promise<Receipt[]> {
-  const q = query(collection(db, "receipts"), where("customerId", "==", customerId), orderBy("createdAt", "desc"));
+  // where-only to avoid composite index; sort client-side
+  const q = query(collection(db, "receipts"), where("customerId", "==", customerId));
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Receipt));
+  const receipts = snap.docs.map(d => ({ id: d.id, ...d.data() } as Receipt));
+  return receipts.sort((a, b) => {
+    const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
+    const bTime = (b as any).createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────

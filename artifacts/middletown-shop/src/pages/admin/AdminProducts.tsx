@@ -157,11 +157,11 @@ export default function AdminProducts() {
                 <tr key={p.id} data-testid={`product-row-${p.id}`} className="border-t border-border hover:bg-muted/20 transition-colors">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
-                      <img src={p.images[0] || "https://placehold.co/40x40/e2e8f0/64748b?text=No+Img"} alt={p.name}
+                      <img src={(p.images || [])[0] || "https://placehold.co/40x40/e2e8f0/64748b?text=No+Img"} alt={p.name}
                         className="w-10 h-10 object-cover rounded-lg border border-border flex-shrink-0" />
                       <div>
                         <p className="font-medium text-foreground line-clamp-1">{p.name}</p>
-                        <p className="text-xs text-muted-foreground">{p.images.length} image(s)</p>
+                        <p className="text-xs text-muted-foreground">{(p.images || []).length} image(s)</p>
                       </div>
                     </div>
                   </td>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, orderBy, limit, onSnapshot, doc } from "firebase/firestore";
+import { collection, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import type { Order, Notification } from "@/lib/types";
@@ -15,14 +15,24 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "orders"), where("customerId", "==", user.uid), orderBy("createdAt", "desc"), limit(5));
-    return onSnapshot(q, snap => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order))));
+    // where-only to avoid composite index; limit+sort client-side
+    const q = query(collection(db, "orders"), where("customerId", "==", user.uid));
+    return onSnapshot(q, snap => {
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+      all.sort((a, b) => ((b as any).createdAt?.toMillis?.() ?? 0) - ((a as any).createdAt?.toMillis?.() ?? 0));
+      setOrders(all.slice(0, 5));
+    });
   }, [user]);
 
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, "notifications"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(10));
-    return onSnapshot(q, snap => setNotifications(snap.docs.map(d => ({ id: d.id, ...d.data() } as Notification))));
+    // where-only to avoid composite index; limit+sort client-side
+    const q = query(collection(db, "notifications"), where("userId", "==", user.uid));
+    return onSnapshot(q, snap => {
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Notification));
+      all.sort((a, b) => ((b as any).createdAt?.toMillis?.() ?? 0) - ((a as any).createdAt?.toMillis?.() ?? 0));
+      setNotifications(all.slice(0, 10));
+    });
   }, [user]);
 
   const unread = notifications.filter(n => !n.read).length;
