@@ -6,9 +6,9 @@ import type { Product } from "@/lib/types";
 import toast from "react-hot-toast";
 import { Plus, Pencil, Trash2, ImagePlus, X, Eye, EyeOff } from "lucide-react";
 
-const CATEGORIES = ["physical", "digital", "data", "airtime", "utility", "service"] as const;
+const CATEGORIES = ["market", "physical", "digital", "data", "service"] as const;
 const EMPTY_FORM = {
-  name: "", description: "", category: "physical" as Product["category"],
+  name: "", description: "", category: "market" as Product["category"],
   price: 0, stock: 0, enabled: true, featured: false,
   images: [] as string[], deliveryOptions: [] as string[],
 };

@@ -13,9 +13,13 @@ import {
   setDoc,
   serverTimestamp,
   Timestamp,
+  increment,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { Product, Order, OrderItem, OrderStatus, Receipt, ShippingInfo, UserProfile } from "./types";
+import type {
+  Product, Order, OrderItem, OrderStatus, Receipt, ShippingInfo, UserProfile,
+  BundleOrder, WalletTransaction, WithdrawalRequest, AgentApplication, AgentCommission,
+} from "./types";
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +57,14 @@ export async function getProducts(opts?: { category?: string; enabled?: boolean 
   }
   const snap = await getDocs(q);
   let items = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
-  if (opts?.category) items = items.filter(p => p.category === opts.category);
+
+  // "market" filter includes legacy physical/digital products
+  if (opts?.category === "market") {
+    items = items.filter(p => ["market", "physical", "digital"].includes(p.category));
+  } else if (opts?.category) {
+    items = items.filter(p => p.category === opts.category);
+  }
+
   // Sort newest first client-side
   items.sort((a, b) => {
     const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
@@ -226,4 +237,171 @@ export async function getCustomerReceipts(customerId: string): Promise<Receipt[]
 
 export async function markNotificationRead(id: string): Promise<void> {
   await updateDoc(doc(db, "notifications", id), { read: true });
+}
+
+// ─── Data Bundles ─────────────────────────────────────────────────────────────
+
+function generateBundleOrderId(): string {
+  return `BD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+}
+
+export async function createBundleOrder(data: Omit<BundleOrder, "id" | "bundleOrderId" | "createdAt" | "status" | "paymentVerified">): Promise<string> {
+  const bundleOrderId = generateBundleOrderId();
+  const ref = await addDoc(collection(db, "bundleOrders"), {
+    ...data,
+    bundleOrderId,
+    status: "pending",
+    paymentVerified: false,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function markBundleOrderPaid(id: string, reference: string, amount: number): Promise<void> {
+  await updateDoc(doc(db, "bundleOrders", id), {
+    status: "paid",
+    paymentVerified: true,
+    paymentReference: reference,
+  });
+  await addDoc(collection(db, "transactions"), {
+    bundleOrderId: id,
+    reference,
+    amount,
+    currency: "GHS",
+    type: "bundle_purchase",
+    status: "success",
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function getCustomerBundleOrders(customerId: string): Promise<BundleOrder[]> {
+  const q = query(collection(db, "bundleOrders"), where("customerId", "==", customerId));
+  const snap = await getDocs(q);
+  const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as BundleOrder));
+  return orders.sort((a, b) => {
+    const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
+    const bTime = (b as any).createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
+}
+
+export async function getAllBundleOrders(): Promise<BundleOrder[]> {
+  const q = query(collection(db, "bundleOrders"), orderBy("createdAt", "desc"));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as BundleOrder));
+}
+
+// ─── Wallet ───────────────────────────────────────────────────────────────────
+
+export async function addWalletDeposit(userId: string, amount: number, reference: string, description = "Wallet top-up"): Promise<void> {
+  // Update user's wallet balance
+  await updateDoc(doc(db, "users", userId), {
+    walletBalance: increment(amount),
+  });
+  // Record wallet transaction
+  await addDoc(collection(db, "walletTransactions"), {
+    userId,
+    type: "deposit",
+    amount,
+    description,
+    reference,
+    status: "completed",
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function requestWalletWithdrawal(data: {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+}): Promise<string> {
+  const ref = await addDoc(collection(db, "withdrawalRequests"), {
+    ...data,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  // Deduct amount from wallet balance (pending withdrawal)
+  await updateDoc(doc(db, "users", data.userId), {
+    walletBalance: increment(-data.amount),
+  });
+  // Record wallet transaction
+  await addDoc(collection(db, "walletTransactions"), {
+    userId: data.userId,
+    type: "withdrawal",
+    amount: data.amount,
+    description: `Withdrawal to ${data.bankName} - ${data.accountNumber}`,
+    reference: ref.id,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function getWalletTransactions(userId: string): Promise<WalletTransaction[]> {
+  const q = query(collection(db, "walletTransactions"), where("userId", "==", userId));
+  const snap = await getDocs(q);
+  const txs = snap.docs.map(d => ({ id: d.id, ...d.data() } as WalletTransaction));
+  return txs.sort((a, b) => {
+    const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
+    const bTime = (b as any).createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
+}
+
+// ─── Agent ────────────────────────────────────────────────────────────────────
+
+export async function submitAgentApplication(data: {
+  userId: string;
+  userName: string;
+  userEmail: string;
+  phone: string;
+  location: string;
+  businessName: string;
+  idType: string;
+  idNumber: string;
+}): Promise<string> {
+  const ref = await addDoc(collection(db, "agentApplications"), {
+    ...data,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function getAgentApplication(userId: string): Promise<AgentApplication | null> {
+  const q = query(collection(db, "agentApplications"), where("userId", "==", userId));
+  const snap = await getDocs(q);
+  if (snap.empty) return null;
+  const d = snap.docs[0];
+  return { id: d.id, ...d.data() } as AgentApplication;
+}
+
+export async function getAgentCommissions(agentId: string): Promise<AgentCommission[]> {
+  const q = query(collection(db, "agentCommissions"), where("agentId", "==", agentId));
+  const snap = await getDocs(q);
+  const commissions = snap.docs.map(d => ({ id: d.id, ...d.data() } as AgentCommission));
+  return commissions.sort((a, b) => {
+    const aTime = (a as any).createdAt?.toMillis?.() ?? 0;
+    const bTime = (b as any).createdAt?.toMillis?.() ?? 0;
+    return bTime - aTime;
+  });
+}
+
+export async function getAllAgentApplications(): Promise<AgentApplication[]> {
+  const snap = await getDocs(collection(db, "agentApplications"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() } as AgentApplication));
+}
+
+export async function approveAgentApplication(applicationId: string, userId: string): Promise<void> {
+  const agentCode = userId.slice(0, 8).toUpperCase();
+  await updateDoc(doc(db, "agentApplications", applicationId), { status: "approved" });
+  await updateDoc(doc(db, "users", userId), { role: "agent", agentCode });
+}
+
+export async function rejectAgentApplication(applicationId: string): Promise<void> {
+  await updateDoc(doc(db, "agentApplications", applicationId), { status: "rejected" });
 }

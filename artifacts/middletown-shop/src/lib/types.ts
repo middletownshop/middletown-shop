@@ -5,17 +5,18 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL: string;
-  role: "admin" | "customer";
+  role: "admin" | "customer" | "agent";
   createdAt: Timestamp;
   walletBalance: number;
   savedProducts: string[];
+  agentCode?: string;
 }
 
 export interface Product {
   id: string;
   name: string;
   description: string;
-  category: "physical" | "digital" | "data" | "airtime" | "utility" | "service";
+  category: "market" | "physical" | "digital" | "data" | "airtime" | "utility" | "service";
   price: number;
   stock: number;
   enabled: boolean;
@@ -101,5 +102,96 @@ export interface Notification {
   message: string;
   read: boolean;
   type: string;
+  createdAt: Timestamp;
+}
+
+// ─── Data Bundles ─────────────────────────────────────────────────────────────
+
+export type NetworkProvider = "MTN" | "Telecel" | "AirtelTigo";
+
+export interface DataBundle {
+  id: string;
+  network: NetworkProvider;
+  name: string;
+  data: string;
+  validity: string;
+  price: number;
+  popular?: boolean;
+}
+
+export type BundleOrderStatus = "pending" | "paid" | "processing" | "delivered" | "failed";
+
+export interface BundleOrder {
+  id: string;
+  bundleOrderId: string;
+  customerId: string;
+  customerEmail: string;
+  customerName: string;
+  network: NetworkProvider;
+  bundleName: string;
+  bundleData: string;
+  bundleValidity: string;
+  phoneNumber: string;
+  amount: number;
+  status: BundleOrderStatus;
+  paymentReference: string;
+  paymentVerified: boolean;
+  createdAt: Timestamp;
+}
+
+// ─── Wallet ───────────────────────────────────────────────────────────────────
+
+export type WalletTxType = "deposit" | "withdrawal" | "purchase" | "commission" | "refund";
+
+export interface WalletTransaction {
+  id: string;
+  userId: string;
+  type: WalletTxType;
+  amount: number;
+  description: string;
+  reference: string;
+  status: "pending" | "completed" | "failed";
+  createdAt: Timestamp;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  status: "pending" | "approved" | "rejected";
+  createdAt: Timestamp;
+}
+
+// ─── Agent ────────────────────────────────────────────────────────────────────
+
+export type AgentApplicationStatus = "pending" | "approved" | "rejected";
+
+export interface AgentApplication {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  phone: string;
+  location: string;
+  businessName: string;
+  idType: string;
+  idNumber: string;
+  status: AgentApplicationStatus;
+  createdAt: Timestamp;
+}
+
+export interface AgentCommission {
+  id: string;
+  agentId: string;
+  orderId: string;
+  orderAmount: number;
+  commissionRate: number;
+  commissionAmount: number;
+  status: "pending" | "paid";
   createdAt: Timestamp;
 }

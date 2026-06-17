@@ -6,18 +6,16 @@ import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 
 const CATEGORIES = [
-  { label: "Physical Products", value: "physical", icon: "📦", desc: "Electronics, clothing, accessories" },
-  { label: "Digital Products", value: "digital", icon: "💿", desc: "Software, e-books, templates" },
-  { label: "Data Bundles", value: "data", icon: "📶", desc: "MTN, Airtel, Glo, 9mobile" },
-  { label: "Airtime", value: "airtime", icon: "📱", desc: "Top up any network instantly" },
-  { label: "Utility Payments", value: "utility", icon: "💡", desc: "NEPA, water, cable TV" },
-  { label: "Services", value: "service", icon: "🛠️", desc: "Professional & freelance" },
+  { label: "Market", value: "market", icon: "🛒", desc: "Products, electronics & more", href: "/products?category=market" },
+  { label: "Data Bundles", value: "data", icon: "📶", desc: "MTN, Telecel, AirtelTigo", href: "/bundles" },
+  { label: "Services", value: "service", icon: "🛠️", desc: "Professional & freelance", href: "/products?category=service" },
+  { label: "Become Agent", value: "agent", icon: "🤝", desc: "Earn commissions on sales", href: "/agent/apply" },
 ];
 
 const BANNERS = [
-  { title: "Biggest Sale of the Year", subtitle: "Up to 50% off on selected items", cta: "Shop Now", href: "/products", bg: "from-blue-700 to-blue-900" },
-  { title: "Digital Products & Services", subtitle: "Instant delivery, no shipping costs", cta: "Browse Digital", href: "/products?category=digital", bg: "from-indigo-600 to-purple-800" },
-  { title: "Data Bundles & Airtime", subtitle: "Affordable data for all networks", cta: "Buy Now", href: "/products?category=data", bg: "from-emerald-600 to-teal-800" },
+  { title: "Biggest Sale of the Year", subtitle: "Up to 50% off in the Market", cta: "Shop Market", href: "/products?category=market", bg: "from-blue-700 to-blue-900" },
+  { title: "Data Bundles for All Networks", subtitle: "MTN, Telecel & AirtelTigo — instant delivery", cta: "Buy Data", href: "/bundles", bg: "from-emerald-600 to-teal-800" },
+  { title: "Earn as an Agent", subtitle: "Join our agent program and earn commissions", cta: "Apply Now", href: "/agent/apply", bg: "from-orange-600 to-orange-800" },
 ];
 
 export default function HomePage() {
@@ -103,17 +101,17 @@ export default function HomePage() {
             View all <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {CATEGORIES.map(cat => (
             <Link
               key={cat.value}
-              to={`/products?category=${cat.value}`}
+              to={cat.href}
               data-testid={`link-category-${cat.value}`}
-              className="flex flex-col items-center p-4 bg-white border border-border rounded-xl hover:border-primary hover:shadow-md transition-all group text-center"
+              className="flex flex-col items-center p-5 bg-white border border-border rounded-xl hover:border-primary hover:shadow-md transition-all group text-center"
             >
-              <span className="text-3xl mb-2">{cat.icon}</span>
-              <span className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{cat.label}</span>
-              <span className="text-[10px] text-muted-foreground mt-1 hidden sm:block">{cat.desc}</span>
+              <span className="text-4xl mb-3">{cat.icon}</span>
+              <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{cat.label}</span>
+              <span className="text-xs text-muted-foreground mt-1 hidden sm:block">{cat.desc}</span>
             </Link>
           ))}
         </div>

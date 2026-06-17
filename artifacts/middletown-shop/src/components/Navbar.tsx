@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ShoppingCart, Search, Menu, X, Bell, User, LogOut, Settings, Package } from "lucide-react";
+import { ShoppingCart, Search, Menu, X, Bell, User, LogOut, Settings, Package, Signal, Wallet, TrendingUp } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
@@ -8,19 +8,17 @@ import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
 
 const CATEGORIES = [
-  { label: "Physical", value: "physical" },
-  { label: "Digital", value: "digital" },
-  { label: "Data Bundles", value: "data" },
-  { label: "Airtime", value: "airtime" },
-  { label: "Utilities", value: "utility" },
-  { label: "Services", value: "service" },
+  { label: "All Products", value: "", href: "/products" },
+  { label: "Market", value: "market", href: "/products?category=market" },
+  { label: "Data Bundles", value: "data", href: "/bundles" },
+  { label: "Services", value: "service", href: "/products?category=service" },
 ];
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { user, isAdmin, userProfile } = useAuth();
+  const { user, isAdmin, isAgent, userProfile } = useAuth();
   const { cartItems } = useCart();
   const navigate = useNavigate();
 
@@ -93,6 +91,12 @@ export default function Navbar() {
 
         {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
+          {/* Data Bundles shortcut */}
+          <Link to="/bundles" className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-foreground text-sm font-medium">
+            <Signal className="w-4 h-4 text-green-600" />
+            <span className="hidden lg:block">Bundles</span>
+          </Link>
+
           {/* Cart */}
           <Link
             to="/cart"
@@ -124,9 +128,21 @@ export default function Navbar() {
                 </span>
               </button>
               {userMenuOpen && (
-                <div className="absolute right-0 mt-1 w-48 bg-white border border-border rounded-lg shadow-lg py-1 z-50">
+                <div className="absolute right-0 mt-1 w-52 bg-white border border-border rounded-lg shadow-lg py-1 z-50">
                   <Link to="/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
                     <User className="w-4 h-4" /> My Dashboard
+                  </Link>
+                  <Link to="/wallet" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                    <Wallet className="w-4 h-4 text-green-600" />
+                    <span>Wallet</span>
+                    {userProfile && (
+                      <span className="ml-auto text-xs text-green-600 font-semibold">
+                        ₵{Number(userProfile.walletBalance || 0).toLocaleString("en-GH")}
+                      </span>
+                    )}
+                  </Link>
+                  <Link to="/bundles" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                    <Signal className="w-4 h-4 text-green-600" /> Data Bundles
                   </Link>
                   <Link to="/orders" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
                     <Package className="w-4 h-4" /> My Orders
@@ -134,6 +150,11 @@ export default function Navbar() {
                   <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
                     <Settings className="w-4 h-4" /> Profile
                   </Link>
+                  {isAgent && (
+                    <Link to="/agent/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors text-orange-600 font-semibold">
+                      <TrendingUp className="w-4 h-4" /> Agent Dashboard
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Link to="/admin" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors text-primary font-semibold">
                       Admin Panel
@@ -153,7 +174,7 @@ export default function Navbar() {
             </Link>
           )}
 
-          {/* Notifications */}
+          {/* Notifications bell */}
           {user && (
             <Link to="/dashboard" className="relative p-2 rounded-lg hover:bg-accent transition-colors">
               <Bell className="w-5 h-5 text-foreground" />
@@ -170,14 +191,11 @@ export default function Navbar() {
       {/* Category nav */}
       <nav className="hidden md:flex border-t border-border bg-white">
         <div className="max-w-7xl mx-auto px-4 flex gap-0">
-          <Link to="/products" className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-accent transition-colors border-b-2 border-transparent hover:border-primary">
-            All Products
-          </Link>
           {CATEGORIES.map(cat => (
             <Link
-              key={cat.value}
-              to={`/products?category=${cat.value}`}
-              className="px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-accent transition-colors border-b-2 border-transparent hover:border-primary"
+              key={cat.href}
+              to={cat.href}
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-accent transition-colors border-b-2 border-transparent hover:border-primary whitespace-nowrap"
             >
               {cat.label}
             </Link>
@@ -188,12 +206,19 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-white py-2 px-4 flex flex-col gap-1">
-          <Link to="/products" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium">All Products</Link>
           {CATEGORIES.map(cat => (
-            <Link key={cat.value} to={`/products?category=${cat.value}`} onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">
+            <Link key={cat.href} to={cat.href} onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">
               {cat.label}
             </Link>
           ))}
+          {user && (
+            <>
+              <div className="border-t border-border my-1" />
+              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium">Dashboard</Link>
+              <Link to="/wallet" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">Wallet</Link>
+              <Link to="/orders" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">My Orders</Link>
+            </>
+          )}
         </div>
       )}
     </header>
