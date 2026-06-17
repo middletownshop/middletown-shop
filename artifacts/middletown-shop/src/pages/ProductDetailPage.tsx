@@ -40,10 +40,9 @@ export default function ProductDetailPage() {
   }, [product]);
 
   useEffect(() => {
-    if (lightbox) {
-      window.addEventListener("keydown", closeOnEsc);
-      return () => window.removeEventListener("keydown", closeOnEsc);
-    }
+    if (!lightbox) return;
+    window.addEventListener("keydown", closeOnEsc);
+    return () => window.removeEventListener("keydown", closeOnEsc);
   }, [lightbox, closeOnEsc]);
 
   const handleAddToCart = () => {

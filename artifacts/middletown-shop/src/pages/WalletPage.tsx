@@ -38,7 +38,7 @@ export default function WalletPage() {
   const handleDeposit = (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(depositAmount);
-    if (!amount || amount < 1) return toast.error("Minimum deposit is ₵1");
+    if (!amount || amount < 1) { toast.error("Minimum deposit is ₵1"); return; }
     if (!user) return;
 
     const handler = (window as any).PaystackPop?.setup({
@@ -72,8 +72,8 @@ export default function WalletPage() {
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(withdrawAmount);
-    if (!amount || amount < 10) return toast.error("Minimum withdrawal is ₵10");
-    if (amount > balance) return toast.error("Insufficient wallet balance");
+    if (!amount || amount < 10) { toast.error("Minimum withdrawal is ₵10"); return; }
+    if (amount > balance) { toast.error("Insufficient wallet balance"); return; }
     if (!user || !userProfile) return;
 
     setWithdrawing(true);
