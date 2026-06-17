@@ -1,218 +1,967 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  runTransaction,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
-import type { DataBundle, NetworkProvider } from "@/lib/types";
-import { createBundleOrder, markBundleOrderPaid } from "@/lib/firestore";
-import { Signal, Phone, Check, Loader2, Zap } from "lucide-react";
-import toast from "react-hot-toast";
+import { useToast } from "@/hooks/use-toast";
 
-const BUNDLES: Record<NetworkProvider, DataBundle[]> = {
-  MTN: [
-    { id: "mtn-1", network: "MTN", name: "Daily Starter", data: "1GB", validity: "24 hours", price: 5 },
-    { id: "mtn-2", network: "MTN", name: "3-Day Pack", data: "2GB", validity: "3 days", price: 8 },
-    { id: "mtn-3", network: "MTN", name: "Weekly Pack", data: "5GB", validity: "7 days", price: 15, popular: true },
-    { id: "mtn-4", network: "MTN", name: "Monthly Light", data: "10GB", validity: "30 days", price: 25 },
-    { id: "mtn-5", network: "MTN", name: "Monthly Pro", data: "20GB", validity: "30 days", price: 45, popular: true },
-    { id: "mtn-6", network: "MTN", name: "Monthly Max", data: "50GB", validity: "30 days", price: 90 },
-  ],
-  Telecel: [
-    { id: "tc-1", network: "Telecel", name: "Daily Starter", data: "1GB", validity: "1 day", price: 4 },
-    { id: "tc-2", network: "Telecel", name: "Weekly Pack", data: "3GB", validity: "7 days", price: 12, popular: true },
-    { id: "tc-3", network: "Telecel", name: "Monthly Light", data: "6GB", validity: "30 days", price: 20 },
-    { id: "tc-4", network: "Telecel", name: "Monthly Pro", data: "15GB", validity: "30 days", price: 35, popular: true },
-    { id: "tc-5", network: "Telecel", name: "Monthly Max", data: "30GB", validity: "30 days", price: 60 },
-  ],
-  AirtelTigo: [
-    { id: "at-1", network: "AirtelTigo", name: "Daily Starter", data: "1.5GB", validity: "1 day", price: 5 },
-    { id: "at-2", network: "AirtelTigo", name: "Weekly Pack", data: "4GB", validity: "7 days", price: 12, popular: true },
-    { id: "at-3", network: "AirtelTigo", name: "Monthly Light", data: "8GB", validity: "30 days", price: 22 },
-    { id: "at-4", network: "AirtelTigo", name: "Monthly Pro", data: "20GB", validity: "30 days", price: 40, popular: true },
-    { id: "at-5", network: "AirtelTigo", name: "Monthly Max", data: "40GB", validity: "30 days", price: 70 },
-  ],
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+import {
+  Wifi,
+  Clock,
+  Wallet,
+  Phone,
+  X,
+  CheckCircle2,
+  Search,
+  Sparkles,
+  CreditCard,
+} from "lucide-react";
+
+const NETWORKS = [
+  "All",
+  "MTN",
+  "Telecel",
+  "AirtelTigo",
+] as const;
+
+const NETWORK_CONFIG: Record<
+  string,
+  {
+    bg: string;
+    text: string;
+    logo: string;
+    prefixes: string[];
+  }
+> = {
+  MTN: {
+    bg: "#EAB308",
+    text: "#fff",
+    logo: "🟡",
+    prefixes: ["024", "054", "055", "059"],
+  },
+
+  Telecel: {
+    bg: "#EF4444",
+    text: "#fff",
+    logo: "🔴",
+    prefixes: ["020", "050"],
+  },
+
+  AirtelTigo: {
+    bg: "#3B82F6",
+    text: "#fff",
+    logo: "🔵",
+    prefixes: ["026", "027", "056", "057"],
+  },
 };
 
-const NETWORK_COLORS: Record<NetworkProvider, { bg: string; text: string; badge: string; ring: string }> = {
-  MTN: { bg: "bg-yellow-400", text: "text-yellow-900", badge: "bg-yellow-100 text-yellow-800", ring: "ring-yellow-400" },
-  Telecel: { bg: "bg-red-500", text: "text-white", badge: "bg-red-100 text-red-700", ring: "ring-red-400" },
-  AirtelTigo: { bg: "bg-blue-600", text: "text-white", badge: "bg-blue-100 text-blue-700", ring: "ring-blue-500" },
-};
+function PhoneModal({
+  bundle,
+  balance,
+  onConfirm,
+  onClose,
+  loading,
+}: {
+  bundle: any;
+  balance: number;
 
-export default function DataBundlesPage() {
-  const { user, userProfile } = useAuth();
-  const navigate = useNavigate();
-  const [network, setNetwork] = useState<NetworkProvider>("MTN");
-  const [selected, setSelected] = useState<DataBundle | null>(null);
+  onConfirm: (
+    phone: string,
+    paymentMethod: "wallet" | "paystack"
+  ) => void;
+
+  onClose: () => void;
+  loading: boolean;
+}) {
   const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const colors = NETWORK_COLORS[network];
-  const bundles = BUNDLES[network];
+  const [paymentMethod, setPaymentMethod] =
+    useState<"wallet" | "paystack">(
+      "paystack"
+    );
 
-  const handleBuy = async (e: React.FormEvent) => {
+  const cfg =
+    NETWORK_CONFIG[bundle.network] ||
+    NETWORK_CONFIG["MTN"];
+
+  const isValid = /^0\d{9}$/.test(phone);
+
+  const hasDiscount =
+    bundle.discount &&
+    bundle.discount > 0;
+
+  const finalPrice = hasDiscount
+    ? bundle.price -
+      bundle.price * (bundle.discount / 100)
+    : bundle.price;
+
+  const canUseWallet =
+    balance >= finalPrice;
+
+  const handleSubmit = (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
-    if (!selected) return toast.error("Please select a bundle");
-    if (!phone.trim() || phone.length < 10) return toast.error("Enter a valid phone number");
 
-    if (!user) {
-      toast.error("Please sign in to purchase bundles");
-      return navigate("/login");
+    if (isValid) {
+      onConfirm(phone, paymentMethod);
     }
-
-    // Create pending order first
-    let orderId: string;
-    try {
-      orderId = await createBundleOrder({
-        customerId: user.uid,
-        customerEmail: user.email || "",
-        customerName: userProfile?.displayName || user.email?.split("@")[0] || "Customer",
-        network: selected.network,
-        bundleName: selected.name,
-        bundleData: selected.data,
-        bundleValidity: selected.validity,
-        phoneNumber: phone.trim(),
-        amount: selected.price,
-        paymentReference: "",
-      });
-    } catch {
-      return toast.error("Failed to create order. Please try again.");
-    }
-
-    const handler = (window as any).PaystackPop?.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-      email: user.email,
-      amount: selected.price * 100,
-      currency: "GHS",
-      ref: `BD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-      metadata: { orderId, network: selected.network, phone: phone.trim() },
-      callback: async (response: { reference: string }) => {
-        setLoading(true);
-        try {
-          await markBundleOrderPaid(orderId, response.reference, selected.price);
-          toast.success(`${selected.data} ${selected.network} bundle purchased! Delivering to ${phone}...`);
-          setSelected(null);
-          setPhone("");
-          navigate("/bundle-orders");
-        } catch {
-          toast.error("Payment received but order update failed. Contact support.");
-        } finally {
-          setLoading(false);
-        }
-      },
-      onClose: () => {},
-    });
-    handler?.openIframe();
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Signal className="w-6 h-6 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">Data Bundles</h1>
-        </div>
-        <p className="text-muted-foreground text-sm">Affordable data bundles for all networks in Ghana</p>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={!loading ? onClose : undefined}
+      />
 
-      {/* Network selector */}
-      <div className="flex gap-3 mb-8">
-        {(Object.keys(BUNDLES) as NetworkProvider[]).map(n => {
-          const c = NETWORK_COLORS[n];
-          const isActive = network === n;
-          return (
-            <button
-              key={n}
-              onClick={() => { setNetwork(n); setSelected(null); }}
-              className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all ${
-                isActive
-                  ? `${c.bg} ${c.text} shadow-lg ring-2 ${c.ring} ring-offset-2`
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              {n}
-            </button>
-          );
-        })}
-      </div>
+      {/* Modal */}
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+        {/* Top Gradient */}
+        <div
+          className="absolute top-0 left-0 right-0 h-1.5"
+          style={{
+            background: `linear-gradient(to right, white, ${cfg.bg}, white)`,
+          }}
+        />
 
-      {/* Bundle grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        {bundles.map(bundle => {
-          const isSelected = selected?.id === bundle.id;
-          return (
-            <button
-              key={bundle.id}
-              onClick={() => setSelected(bundle)}
-              className={`relative text-left border-2 rounded-xl p-4 transition-all hover:shadow-md ${
-                isSelected
-                  ? "border-primary bg-primary/5 shadow-md"
-                  : "border-border bg-white hover:border-primary/50"
-              }`}
+        <div className="p-6 space-y-5">
+          {/* Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-12 w-12 rounded-2xl flex items-center justify-center"
+                style={{
+                  backgroundColor: `${cfg.bg}20`,
+                  color: cfg.bg,
+                }}
+              >
+                <Sparkles className="h-6 w-6" />
+              </div>
+
+              <div>
+                <h3 className="font-black text-xl text-black">
+                  Checkout
+                </h3>
+
+                <p className="text-xs text-gray-500">
+                  Complete your purchase
+                </p>
+              </div>
+            </div>
+
+            {!loading && (
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-black transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+
+          {/* Bundle Preview */}
+          <div
+            className="rounded-2xl border p-4"
+            style={{
+              borderColor: `${cfg.bg}40`,
+              backgroundColor: `${cfg.bg}10`,
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <Badge
+                  className="mb-2 border-0"
+                  style={{
+                    backgroundColor: cfg.bg,
+                    color: "#fff",
+                  }}
+                >
+                  {cfg.logo} {bundle.network}
+                </Badge>
+
+                <h2 className="text-3xl font-black text-black">
+                  {bundle.size}
+                </h2>
+
+                <p className="flex items-center gap-1 text-sm text-gray-500 mt-2">
+                  <Clock className="h-3 w-3" />
+                  {bundle.validity}
+                </p>
+              </div>
+
+              <div className="text-right">
+                {hasDiscount ? (
+                  <>
+                    <p className="text-3xl font-black text-black">
+                      GHS{" "}
+                      {finalPrice.toFixed(2)}
+                    </p>
+
+                    <p className="text-sm line-through text-gray-400">
+                      GHS{" "}
+                      {bundle.price.toFixed(2)}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-3xl font-black text-black">
+                    GHS{" "}
+                    {bundle.price.toFixed(2)}
+                  </p>
+                )}
+
+                <p className="text-xs text-gray-500 mt-1">
+                  Wallet: GHS{" "}
+                  {balance.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Methods */}
+          <div className="space-y-2">
+            <Label className="text-black">
+              Payment Method
+            </Label>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Paystack */}
+              <button
+                type="button"
+                onClick={() =>
+                  setPaymentMethod(
+                    "paystack"
+                  )
+                }
+                className={`rounded-2xl border p-4 text-left transition-all ${
+                  paymentMethod ===
+                  "paystack"
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200"
+                }`}
+              >
+                <CreditCard className="h-5 w-5 mb-2 text-primary" />
+
+                <p className="font-bold text-black">
+                  Paystack
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  MOMO / Card
+                </p>
+              </button>
+
+              {/* Wallet */}
+              <button
+                type="button"
+                disabled={!canUseWallet}
+                onClick={() =>
+                  setPaymentMethod(
+                    "wallet"
+                  )
+                }
+                className={`rounded-2xl border p-4 text-left transition-all ${
+                  paymentMethod ===
+                  "wallet"
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200"
+                } ${
+                  !canUseWallet
+                    ? "opacity-50"
+                    : ""
+                }`}
+              >
+                <Wallet className="h-5 w-5 mb-2 text-primary" />
+
+                <p className="font-bold text-black">
+                  Wallet
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  Use balance
+                </p>
+              </button>
+            </div>
+          </div>
+
+          {/* Form */}
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label
+                htmlFor="phone"
+                className="text-black"
+              >
+                Recipient Number
+              </Label>
+
+              <div className="relative">
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="0241234567"
+                  value={phone}
+                  disabled={loading}
+                  onChange={(e) =>
+                    setPhone(
+                      e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10)
+                    )
+                  }
+                  className="h-12 rounded-2xl pr-10 font-mono text-lg"
+                />
+
+                {isValid && (
+                  <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-green-500" />
+                )}
+              </div>
+
+              {/* Prefixes */}
+              <div className="flex flex-wrap gap-2">
+                {cfg.prefixes.map((prefix) => (
+                  <button
+                    key={prefix}
+                    type="button"
+                    disabled={loading}
+                    onClick={() =>
+                      setPhone(prefix)
+                    }
+                    className="rounded-full border px-3 py-1 text-xs font-semibold hover:opacity-80"
+                    style={{
+                      borderColor: `${cfg.bg}40`,
+                      color: cfg.bg,
+                    }}
+                  >
+                    {prefix}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Submit */}
+            <Button
+              type="submit"
+              disabled={!isValid || loading}
+              className="h-12 w-full rounded-2xl text-base font-bold text-white shadow-lg"
+              style={{
+                background: `linear-gradient(135deg, ${cfg.bg}, ${cfg.bg}CC)`,
+              }}
             >
-              {bundle.popular && (
-                <span className="absolute -top-2.5 right-3 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                  <Zap className="w-2.5 h-2.5" /> Popular
+              {loading ? (
+                "Processing..."
+              ) : paymentMethod ===
+                "paystack" ? (
+                <span className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Continue to Paystack
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Pay with Wallet
                 </span>
               )}
-              {isSelected && (
-                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-3 h-3 text-white" />
-                </div>
-              )}
-              <div className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full mb-2 ${NETWORK_COLORS[network].badge}`}>
-                {bundle.validity}
-              </div>
-              <p className="text-2xl font-black text-foreground">{bundle.data}</p>
-              <p className="text-sm text-muted-foreground mb-3">{bundle.name}</p>
-              <p className="text-lg font-bold text-primary">₵{bundle.price}</p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Purchase form */}
-      {selected && (
-        <div className="bg-white border border-border rounded-xl p-6 shadow-sm">
-          <h3 className="font-bold text-foreground mb-1">
-            Complete Purchase — {selected.data} {selected.network} ({selected.validity})
-          </h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Total: <span className="font-bold text-primary">₵{selected.price}</span>
-          </p>
-          <form onSubmit={handleBuy} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1 flex items-center gap-1.5">
-                <Phone className="w-4 h-4" /> Recipient Phone Number
-              </label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                required
-                placeholder="e.g. 0244123456"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              />
-              <p className="text-xs text-muted-foreground mt-1">Enter the phone number that should receive the data bundle</p>
-            </div>
-            <div className="flex gap-3">
-              <button type="button" onClick={() => setSelected(null)}
-                className="flex-1 py-3 rounded-lg border border-border text-muted-foreground text-sm font-medium hover:bg-muted transition-colors">
-                Cancel
-              </button>
-              <button type="submit" disabled={loading}
-                className="flex-2 flex-1 bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-bold text-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : `Pay ₵${selected.price} via Paystack`}
-              </button>
-            </div>
+            </Button>
           </form>
         </div>
-      )}
-
-      {!selected && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
-          <strong>How it works:</strong> Select a bundle above, enter the recipient's phone number, and pay securely via Paystack. Bundle is delivered instantly after payment confirmation.
-        </div>
-      )}
+      </div>
     </div>
+  );
+}
+
+export default function Shop() {
+  const { user, userProfile: profile } = useAuth();
+
+  const { toast } = useToast();
+
+  const [bundles, setBundles] = useState<
+    any[]
+  >([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [activeNetwork, setActiveNetwork] =
+    useState("All");
+
+  const [search, setSearch] =
+    useState("");
+
+  const [selectedBundle, setSelectedBundle] =
+    useState<any | null>(null);
+
+  const [buying, setBuying] =
+    useState(false);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "bundles"),
+      where("active", "==", true)
+    );
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map(
+          (doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })
+        );
+
+        data.sort(
+          (a: any, b: any) =>
+            (a.price || 0) -
+            (b.price || 0)
+        );
+
+        setBundles(data);
+
+        setLoading(false);
+      },
+      () => setLoading(false)
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleBuy = async (
+    phone: string,
+    paymentMethod:
+      | "wallet"
+      | "paystack"
+  ) => {
+    if (!selectedBundle) return;
+
+    const finalPrice =
+      selectedBundle.discount &&
+      selectedBundle.discount > 0
+        ? selectedBundle.price -
+          selectedBundle.price *
+            (selectedBundle.discount /
+              100)
+        : selectedBundle.price;
+
+    // PAYSTACK
+    if (paymentMethod === "paystack") {
+      toast({
+        title:
+          "Redirecting to Paystack...",
+        description:
+          "Complete your payment securely",
+      });
+
+      console.log({
+        amount: finalPrice,
+        phone,
+        bundle: selectedBundle,
+      });
+
+      return;
+    }
+
+    // WALLET
+    if (!user || !profile) return;
+
+    const balance =
+      profile.walletBalance ?? 0;
+
+    if (balance < finalPrice) {
+      toast({
+        variant: "destructive",
+        title: "Insufficient Balance",
+      });
+
+      return;
+    }
+
+    setBuying(true);
+
+    try {
+      await runTransaction(
+        db,
+        async (tx) => {
+          const userRef = doc(
+            db,
+            "users",
+            user.uid
+          );
+
+          const userDoc =
+            await tx.get(userRef);
+
+          if (!userDoc.exists()) {
+            throw new Error(
+              "User not found"
+            );
+          }
+
+          const currentBalance =
+            userDoc.data()
+              .walletBalance || 0;
+
+          if (
+            currentBalance < finalPrice
+          ) {
+            throw new Error(
+              "Insufficient balance"
+            );
+          }
+
+          tx.update(userRef, {
+            walletBalance:
+              currentBalance -
+              finalPrice,
+          });
+        }
+      );
+
+      await addDoc(
+        collection(db, "orders"),
+        {
+          uid: user.uid,
+          userName: profile.displayName,
+
+          bundleId: selectedBundle.id,
+
+          network:
+            selectedBundle.network,
+
+          size: selectedBundle.size,
+
+          validity:
+            selectedBundle.validity,
+
+          originalPrice:
+            selectedBundle.price,
+
+          discount:
+            selectedBundle.discount || 0,
+
+          amountPaid: finalPrice,
+
+          recipientPhone: phone,
+
+          flashSale:
+            selectedBundle.flashSale ||
+            false,
+
+          paymentMethod:
+            paymentMethod,
+
+          status: "completed",
+
+          timestamp:
+            serverTimestamp(),
+        }
+      );
+
+      toast({
+        title:
+          "Bundle Sent Successfully ⚡",
+
+        description: `${selectedBundle.network} ${selectedBundle.size} → ${phone}`,
+      });
+
+      setSelectedBundle(null);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+
+        title: "Purchase Failed",
+
+        description:
+          error.message ||
+          "Please try again",
+      });
+    } finally {
+      setBuying(false);
+    }
+  };
+
+  const filtered =
+    activeNetwork === "All"
+      ? bundles
+      : bundles.filter(
+          (b) =>
+            b.network ===
+            activeNetwork
+        );
+
+  return (
+    <>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-14 w-14 rounded-3xl bg-primary/10 flex items-center justify-center">
+              <Sparkles className="h-7 w-7 text-primary" />
+            </div>
+
+            <div>
+              <h1 className="text-3xl font-black text-black">
+                Data Bundles
+              </h1>
+
+              <p className="text-gray-500 text-sm">
+                “Trusted data bundles • Fast activation”
+              </p>
+            </div>
+          </div>
+
+          {/* Wallet */}
+          <div className="rounded-2xl border bg-white px-5 py-4 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-primary" />
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-500">
+                  Wallet Balance
+                </p>
+
+                <h3 className="text-2xl font-black text-black">
+                  GHS{" "}
+                  {profile?.walletBalance?.toFixed(
+                    2
+                  ) ?? "0.00"}
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search + Filter */}
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Search */}
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+
+            <Input
+              placeholder="Search bundles..."
+              value={search}
+              onChange={(e) =>
+                setSearch(
+                  e.target.value
+                )
+              }
+              className="pl-11 h-12 rounded-2xl bg-white"
+            />
+          </div>
+
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2">
+            {NETWORKS.map((net) => {
+              const cfg =
+                net !== "All"
+                  ? NETWORK_CONFIG[net]
+                  : null;
+
+              const active =
+                activeNetwork === net;
+
+              return (
+                <button
+                  key={net}
+                  onClick={() =>
+                    setActiveNetwork(net)
+                  }
+                  className={`rounded-2xl px-4 py-2 text-sm font-bold border transition-all ${
+                    active
+                      ? "scale-105 shadow-lg"
+                      : "hover:scale-105 bg-white"
+                  }`}
+                  style={
+                    active && cfg
+                      ? {
+                          backgroundColor:
+                            cfg.bg,
+
+                          borderColor:
+                            cfg.bg,
+
+                          color: "#fff",
+                        }
+                      : {}
+                  }
+                >
+                  {cfg
+                    ? `${cfg.logo} ${net}`
+                    : "All"}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map(
+              (_, i) => (
+                <Skeleton
+                  key={i}
+                  className="h-64 rounded-3xl"
+                />
+              )
+            )}
+          </div>
+        )}
+
+        {/* Empty */}
+        {!loading &&
+          filtered.length === 0 && (
+            <Card className="rounded-3xl bg-white">
+              <CardContent className="flex flex-col items-center justify-center py-20 gap-4">
+                <Wifi className="h-12 w-12 text-gray-300" />
+
+                <div className="text-center">
+                  <h3 className="font-bold text-lg">
+                    No Bundles Found
+                  </h3>
+
+                  <p className="text-sm text-gray-500">
+                    Try another search
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+        {/* Bundle Cards */}
+        {!loading &&
+          filtered.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered
+                .filter(
+                  (bundle) =>
+                    !search ||
+                    bundle.network
+                      ?.toLowerCase()
+                      .includes(
+                        search.toLowerCase()
+                      ) ||
+                    bundle.size
+                      ?.toLowerCase()
+                      .includes(
+                        search.toLowerCase()
+                      )
+                )
+                .map((bundle) => {
+                  const cfg =
+                    NETWORK_CONFIG[
+                      bundle.network
+                    ] ||
+                    NETWORK_CONFIG["MTN"];
+
+                  const hasDiscount =
+                    bundle.discount &&
+                    bundle.discount >
+                      0;
+
+                  const discountedPrice =
+                    hasDiscount
+                      ? bundle.price -
+                        bundle.price *
+                          (bundle.discount /
+                            100)
+                      : bundle.price;
+
+                  return (
+                    <div
+                      key={bundle.id}
+                      className="group relative overflow-hidden rounded-3xl border border-white/60 bg-white shadow-md hover:shadow-2xl hover:-translate-y-1 transition-all duration-300"
+                    >
+                      {/* Glow */}
+                      <div
+                        className="absolute -top-10 -right-10 h-32 w-32 rounded-full blur-3xl opacity-20"
+                        style={{
+                          backgroundColor:
+                            cfg.bg,
+                        }}
+                      />
+
+                      {/* Top Line */}
+                      <div
+                        className="absolute top-0 left-0 right-0 h-1.5"
+                        style={{
+                          background: `linear-gradient(to right, white, ${cfg.bg}, white)`,
+                        }}
+                      />
+
+                      {/* Flash Sale */}
+                      {bundle.flashSale && (
+                        <div className="absolute top-3 right-3 z-20">
+                          <div className="rounded-full bg-red-500 px-3 py-1 text-[10px] font-black text-white shadow-lg animate-pulse">
+                            ⚡ FLASH SALE
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Discount */}
+                      {hasDiscount && (
+                        <div className="absolute top-3 left-3 z-20">
+                          <div className="rounded-full bg-green-500 px-3 py-1 text-[10px] font-black text-white shadow-lg">
+                            -
+                            {
+                              bundle.discount
+                            }
+                            %
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="relative p-4 flex flex-col h-full">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mt-5 mb-4">
+                          <div
+                            className="h-12 w-12 rounded-2xl flex items-center justify-center text-xl shadow-lg"
+                            style={{
+                              background: `linear-gradient(135deg, ${cfg.bg}, white)`,
+                            }}
+                          >
+                            {cfg.logo}
+                          </div>
+
+                          <Badge
+                            className="border-0 rounded-full text-[11px] font-bold shadow-sm"
+                            style={{
+                              backgroundColor: `${cfg.bg}20`,
+                              color: cfg.bg,
+                            }}
+                          >
+                            {
+                              bundle.network
+                            }
+                          </Badge>
+                        </div>
+
+                        {/* Size */}
+                        <div className="space-y-1 mb-3">
+                          <h2 className="text-3xl font-black leading-none text-black">
+                            {bundle.size}
+                          </h2>
+
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Clock className="h-3.5 w-3.5" />
+                            {
+                              bundle.validity
+                            }
+                          </div>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mb-4">
+                          {hasDiscount ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className="text-3xl font-black text-black">
+                                  GHS{" "}
+                                  {discountedPrice.toFixed(
+                                    2
+                                  )}
+                                </span>
+
+                                <span className="text-sm line-through text-gray-400">
+                                  {
+                                    bundle.price
+                                  }
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-green-600 font-bold">
+                                Save GHS{" "}
+                                {(
+                                  bundle.price -
+                                  discountedPrice
+                                ).toFixed(
+                                  2
+                                )}
+                              </p>
+                            </>
+                          ) : (
+                            <span className="text-3xl font-black text-black">
+                              GHS{" "}
+                              {bundle.price?.toFixed(
+                                2
+                              )}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Features */}
+                        <div className="space-y-1.5 mb-5">
+                          <div className="flex items-center gap-2 text-xs text-gray-700">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                            Secure Checkout
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs text-gray-700">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                            Fast Delivery 24/7
+                          </div>
+                        </div>
+
+                        {/* Button */}
+                        <Button
+                          onClick={() =>
+                            setSelectedBundle(
+                              bundle
+                            )
+                          }
+                          className="mt-auto h-11 rounded-2xl text-sm font-bold text-white shadow-lg hover:scale-[1.02] transition-all"
+                          style={{
+                            background: `linear-gradient(135deg, ${cfg.bg}, ${cfg.bg}CC)`,
+                          }}
+                        >
+                          <Phone className="h-4 w-4 mr-2" />
+                          Buy Now
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+      </div>
+
+      {/* Modal */}
+      {selectedBundle && (
+        <PhoneModal
+          bundle={selectedBundle}
+          balance={
+            profile?.walletBalance ??
+            0
+          }
+          onConfirm={handleBuy}
+          onClose={() =>
+            !buying &&
+            setSelectedBundle(null)
+          }
+          loading={buying}
+        />
+      )}
+    </>
   );
 }

@@ -117,6 +117,8 @@ export interface DataBundle {
   validity: string;
   price: number;
   popular?: boolean;
+  enabled?: boolean;
+  createdAt?: Timestamp;
 }
 
 export type BundleOrderStatus = "pending" | "paid" | "processing" | "delivered" | "failed";
@@ -193,5 +195,27 @@ export interface AgentCommission {
   commissionRate: number;
   commissionAmount: number;
   status: "pending" | "paid";
+  createdAt: Timestamp;
+}
+
+// ─── Complaints ───────────────────────────────────────────────────────────────
+
+export type ComplaintStatus = "open" | "in_progress" | "resolved";
+
+export interface ComplaintReply {
+  from: string;
+  message: string;
+  timestamp: any;
+}
+
+export interface Complaint {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: string;
+  message: string;
+  status: ComplaintStatus;
+  replies: ComplaintReply[];
   createdAt: Timestamp;
 }

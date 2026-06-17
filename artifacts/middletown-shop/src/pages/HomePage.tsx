@@ -6,14 +6,14 @@ import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 
 const CATEGORIES = [
-  { label: "Market", value: "market", icon: "🛒", desc: "Products, electronics & more", href: "/products?category=market" },
-  { label: "Data Bundles", value: "data", icon: "📶", desc: "MTN, Telecel, AirtelTigo", href: "/bundles" },
-  { label: "Services", value: "service", icon: "🛠️", desc: "Professional & freelance", href: "/products?category=service" },
-  { label: "Become Agent", value: "agent", icon: "🤝", desc: "Earn commissions on sales", href: "/agent/apply" },
+  { label: "Shop Products", icon: "🛒", desc: "Electronics, clothing, accessories", href: "/products?category=market" },
+  { label: "Data Bundles", icon: "📶", desc: "MTN, Telecel, AirtelTigo", href: "/bundles" },
+  { label: "Services", icon: "🛠️", desc: "Professional & freelance", href: "/products?category=service" },
+  { label: "Become Agent", icon: "🤝", desc: "Earn commissions on sales", href: "/agent/apply" },
 ];
 
 const BANNERS = [
-  { title: "Biggest Sale of the Year", subtitle: "Up to 50% off in the Market", cta: "Shop Market", href: "/products?category=market", bg: "from-blue-700 to-blue-900" },
+  { title: "Biggest Sale of the Year", subtitle: "Up to 50% off in Shop Products", cta: "Shop Now", href: "/products?category=market", bg: "from-blue-700 to-blue-900" },
   { title: "Data Bundles for All Networks", subtitle: "MTN, Telecel & AirtelTigo — instant delivery", cta: "Buy Data", href: "/bundles", bg: "from-emerald-600 to-teal-800" },
   { title: "Earn as an Agent", subtitle: "Join our agent program and earn commissions", cta: "Apply Now", href: "/agent/apply", bg: "from-orange-600 to-orange-800" },
 ];
@@ -52,25 +52,21 @@ export default function HomePage() {
           <h1 className="text-3xl md:text-5xl font-bold mb-3 transition-all duration-500">{banner.title}</h1>
           <p className="text-lg md:text-xl text-white/80 mb-8">{banner.subtitle}</p>
           <form onSubmit={handleSearch} className="w-full max-w-xl flex mb-8">
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="What are you looking for?"
-              data-testid="input-hero-search"
-              className="flex-1 px-5 py-3 rounded-l-xl text-foreground text-base focus:outline-none focus:ring-2 focus:ring-white/50"
-            />
-            <button type="submit" data-testid="button-hero-search" className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 px-6 py-3 rounded-r-xl font-semibold transition-colors flex items-center gap-2">
+            <input type="search" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="What are you looking for?" data-testid="input-hero-search"
+              className="flex-1 px-5 py-3 rounded-l-xl text-foreground text-base focus:outline-none focus:ring-2 focus:ring-white/50" />
+            <button type="submit" data-testid="button-hero-search"
+              className="bg-yellow-400 hover:bg-yellow-300 text-gray-900 px-6 py-3 rounded-r-xl font-semibold transition-colors flex items-center gap-2">
               <Search className="w-4 h-4" /> Search
             </button>
           </form>
           <Link to={banner.href} className="bg-white text-blue-700 font-semibold px-8 py-3 rounded-full hover:bg-blue-50 transition-colors">
             {banner.cta}
           </Link>
-          {/* Dots */}
           <div className="flex gap-2 mt-6">
             {BANNERS.map((_, i) => (
-              <button key={i} onClick={() => setActiveBanner(i)} className={`w-2 h-2 rounded-full transition-all ${i === activeBanner ? "bg-white w-6" : "bg-white/40"}`} />
+              <button key={i} onClick={() => setActiveBanner(i)}
+                className={`h-2 rounded-full transition-all ${i === activeBanner ? "bg-white w-6" : "bg-white/40 w-2"}`} />
             ))}
           </div>
         </div>
@@ -86,8 +82,7 @@ export default function HomePage() {
             { icon: <Star className="w-5 h-5 text-primary" />, text: "Verified Sellers" },
           ].map(({ icon, text }) => (
             <div key={text} className="flex items-center gap-2 justify-center">
-              {icon}
-              <span className="text-sm font-medium text-foreground">{text}</span>
+              {icon}<span className="text-sm font-medium text-foreground">{text}</span>
             </div>
           ))}
         </div>
@@ -103,14 +98,10 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {CATEGORIES.map(cat => (
-            <Link
-              key={cat.value}
-              to={cat.href}
-              data-testid={`link-category-${cat.value}`}
-              className="flex flex-col items-center p-5 bg-white border border-border rounded-xl hover:border-primary hover:shadow-md transition-all group text-center"
-            >
+            <Link key={cat.label} to={cat.href}
+              className="flex flex-col items-center p-5 bg-white border border-border rounded-xl hover:border-primary hover:shadow-md transition-all group text-center">
               <span className="text-4xl mb-3">{cat.icon}</span>
-              <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors leading-tight">{cat.label}</span>
+              <span className="text-sm font-semibold text-foreground group-hover:text-primary leading-tight">{cat.label}</span>
               <span className="text-xs text-muted-foreground mt-1 hidden sm:block">{cat.desc}</span>
             </Link>
           ))}
@@ -133,7 +124,6 @@ export default function HomePage() {
                 <div className="p-3 space-y-2">
                   <div className="h-3 bg-gray-200 rounded w-3/4" />
                   <div className="h-3 bg-gray-200 rounded w-1/2" />
-                  <div className="h-6 bg-gray-200 rounded" />
                 </div>
               </div>
             ))}
@@ -142,10 +132,7 @@ export default function HomePage() {
           <div className="text-center py-16 text-muted-foreground">
             <div className="text-5xl mb-4">🏪</div>
             <p className="text-lg font-medium">No featured products yet</p>
-            <p className="text-sm mt-1">Check back soon or browse all products</p>
-            <Link to="/products" className="mt-4 inline-block bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors">
-              Browse Products
-            </Link>
+            <Link to="/products" className="mt-4 inline-block bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90">Browse Products</Link>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -154,16 +141,14 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Promo banner */}
+      {/* CTA */}
       <section className="bg-primary text-white py-12">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6">
           <div>
             <h3 className="text-2xl font-bold mb-2">Start Shopping Today</h3>
             <p className="text-white/80">Join thousands of Ghanaians shopping on Middletown Shop. Secure, fast, reliable.</p>
           </div>
-          <Link to="/products" className="bg-white text-primary font-bold px-8 py-3 rounded-full hover:bg-blue-50 transition-colors whitespace-nowrap">
-            Shop Now
-          </Link>
+          <Link to="/products" className="bg-white text-primary font-bold px-8 py-3 rounded-full hover:bg-blue-50 whitespace-nowrap">Shop Now</Link>
         </div>
       </section>
     </div>

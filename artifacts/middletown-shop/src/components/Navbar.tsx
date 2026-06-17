@@ -8,10 +8,10 @@ import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
 
 const CATEGORIES = [
-  { label: "All Products", value: "", href: "/products" },
-  { label: "Market", value: "market", href: "/products?category=market" },
-  { label: "Data Bundles", value: "data", href: "/bundles" },
-  { label: "Services", value: "service", href: "/products?category=service" },
+  { label: "All Products", href: "/products" },
+  { label: "Shop Products", href: "/products?category=market" },
+  { label: "Data Bundles", href: "/bundles" },
+  { label: "Services", href: "/products?category=service" },
 ];
 
 export default function Navbar() {
@@ -54,15 +54,12 @@ export default function Navbar() {
               <Link to="/login?tab=register" className="hover:underline">Register</Link>
             </>
           )}
-          {isAdmin && (
-            <Link to="/admin" className="hover:underline font-semibold">Admin Panel</Link>
-          )}
+          {isAdmin && <Link to="/admin" className="hover:underline font-semibold">Admin Panel</Link>}
         </div>
       </div>
 
       {/* Main nav */}
       <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
-        {/* Logo */}
         <Link to="/" className="flex-shrink-0 flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
             <span className="text-white font-bold text-sm">M</span>
@@ -70,39 +67,24 @@ export default function Navbar() {
           <span className="font-bold text-xl text-primary hidden sm:block">Middletown Shop</span>
         </Link>
 
-        {/* Search */}
         <form onSubmit={handleSearch} className="flex-1 flex max-w-2xl">
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search products..."
-            data-testid="input-search"
-            className="flex-1 border border-border rounded-l-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-          />
-          <button
-            type="submit"
-            data-testid="button-search"
-            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-r-lg transition-colors"
-          >
+          <input type="search" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search products..." data-testid="input-search"
+            className="flex-1 border border-border rounded-l-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+          <button type="submit" data-testid="button-search"
+            className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-r-lg transition-colors">
             <Search className="w-4 h-4" />
           </button>
         </form>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 ml-auto">
-          {/* Data Bundles shortcut */}
-          <Link to="/bundles" className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-foreground text-sm font-medium">
+          <Link to="/bundles" className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm font-medium">
             <Signal className="w-4 h-4 text-green-600" />
             <span className="hidden lg:block">Bundles</span>
           </Link>
 
-          {/* Cart */}
-          <Link
-            to="/cart"
-            data-testid="link-cart"
-            className="relative flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-foreground"
-          >
+          <Link to="/cart" data-testid="link-cart"
+            className="relative flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-foreground">
             <ShoppingCart className="w-5 h-5" />
             <span className="hidden sm:block text-sm font-medium">Cart</span>
             {cartItems.length > 0 && (
@@ -112,14 +94,10 @@ export default function Navbar() {
             )}
           </Link>
 
-          {/* User menu */}
           {user ? (
             <div className="relative">
-              <button
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-                data-testid="button-user-menu"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors"
-              >
+              <button onClick={() => setUserMenuOpen(!userMenuOpen)} data-testid="button-user-menu"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-accent transition-colors">
                 <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-primary" />
                 </div>
@@ -129,10 +107,10 @@ export default function Navbar() {
               </button>
               {userMenuOpen && (
                 <div className="absolute right-0 mt-1 w-52 bg-white border border-border rounded-lg shadow-lg py-1 z-50">
-                  <Link to="/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                  <Link to="/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent">
                     <User className="w-4 h-4" /> My Dashboard
                   </Link>
-                  <Link to="/wallet" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                  <Link to="/wallet" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent">
                     <Wallet className="w-4 h-4 text-green-600" />
                     <span>Wallet</span>
                     {userProfile && (
@@ -141,27 +119,30 @@ export default function Navbar() {
                       </span>
                     )}
                   </Link>
-                  <Link to="/bundles" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                  <Link to="/bundles" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent">
                     <Signal className="w-4 h-4 text-green-600" /> Data Bundles
                   </Link>
-                  <Link to="/orders" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                  <Link to="/orders" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent">
                     <Package className="w-4 h-4" /> My Orders
                   </Link>
-                  <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors">
+                  <Link to="/complaints" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent">
+                    <Settings className="w-4 h-4" /> Complaints
+                  </Link>
+                  <Link to="/profile" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent">
                     <Settings className="w-4 h-4" /> Profile
                   </Link>
                   {isAgent && (
-                    <Link to="/agent/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors text-orange-600 font-semibold">
+                    <Link to="/agent/dashboard" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent text-orange-600 font-semibold">
                       <TrendingUp className="w-4 h-4" /> Agent Dashboard
                     </Link>
                   )}
                   {isAdmin && (
-                    <Link to="/admin" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent transition-colors text-primary font-semibold">
+                    <Link to="/admin" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent text-primary font-semibold">
                       Admin Panel
                     </Link>
                   )}
                   <div className="border-t border-border mt-1">
-                    <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-destructive/10 text-destructive w-full transition-colors">
+                    <button onClick={handleLogout} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-destructive/10 text-destructive w-full">
                       <LogOut className="w-4 h-4" /> Sign Out
                     </button>
                   </div>
@@ -169,19 +150,18 @@ export default function Navbar() {
               )}
             </div>
           ) : (
-            <Link to="/login" data-testid="link-login" className="flex items-center gap-1 px-3 py-2 rounded-lg border border-primary text-primary text-sm font-medium hover:bg-primary hover:text-white transition-colors">
+            <Link to="/login" data-testid="link-login"
+              className="flex items-center gap-1 px-3 py-2 rounded-lg border border-primary text-primary text-sm font-medium hover:bg-primary hover:text-white transition-colors">
               Sign In
             </Link>
           )}
 
-          {/* Notifications bell */}
           {user && (
             <Link to="/dashboard" className="relative p-2 rounded-lg hover:bg-accent transition-colors">
               <Bell className="w-5 h-5 text-foreground" />
             </Link>
           )}
 
-          {/* Mobile menu toggle */}
           <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors">
             {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -192,11 +172,8 @@ export default function Navbar() {
       <nav className="hidden md:flex border-t border-border bg-white">
         <div className="max-w-7xl mx-auto px-4 flex gap-0">
           {CATEGORIES.map(cat => (
-            <Link
-              key={cat.href}
-              to={cat.href}
-              className="px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-accent transition-colors border-b-2 border-transparent hover:border-primary whitespace-nowrap"
-            >
+            <Link key={cat.href} to={cat.href}
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-accent transition-colors border-b-2 border-transparent hover:border-primary whitespace-nowrap">
               {cat.label}
             </Link>
           ))}
@@ -216,7 +193,7 @@ export default function Navbar() {
               <div className="border-t border-border my-1" />
               <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium">Dashboard</Link>
               <Link to="/wallet" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">Wallet</Link>
-              <Link to="/orders" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">My Orders</Link>
+              <Link to="/complaints" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">Complaints</Link>
             </>
           )}
         </div>

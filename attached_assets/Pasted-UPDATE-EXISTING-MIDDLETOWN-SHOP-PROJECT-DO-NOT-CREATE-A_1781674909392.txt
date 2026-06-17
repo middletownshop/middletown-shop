@@ -1,0 +1,325 @@
+UPDATE EXISTING MIDDLETOWN SHOP PROJECT
+
+DO NOT CREATE A NEW APP.
+UPDATE THE CURRENT APP ONLY.
+
+========================
+
+1. ADMIN DASHBOARD
+   ========================
+
+Add a new Admin Dashboard card:
+
+* Manage Bundles
+* Route: /admin/bundles
+* Collection: bundles
+
+Admin dashboard quick actions must contain:
+
+* Products
+* Bundles
+* Orders
+* Users
+* Complaints
+* Withdrawal Requests
+
+Display statistics for:
+
+* Total Users
+* Total Orders
+* Total Revenue (GHS)
+* Total Products
+* Total Bundles
+* Pending Complaints
+* Pending Withdrawals
+
+========================
+2. SHOP PRODUCTS
+================
+
+Remove the word:
+
+"Market"
+
+Replace with:
+
+"Shop Products"
+
+Navbar should become:
+
+* All Products
+* Shop Products
+* Data Bundles
+* Services
+
+Shop Products must load from:
+
+Firestore collection: products
+
+Use ONLY:
+
+collection(db, "products")
+
+Remove every reference to:
+
+collection(db, "product")
+
+The Add Product page must:
+
+* Create product
+* Edit product
+* Delete product
+* Toggle active/inactive
+* Support multiple images
+* Save successfully to Firestore
+
+Each product document should support:
+
+{
+name,
+description,
+price,
+images: [],
+category,
+stock,
+enabled,
+createdAt
+}
+
+========================
+3. DASHBOARD SIDEBAR
+====================
+
+Add mobile hamburger menu.
+
+Top left:
+
+☰
+
+When clicked:
+
+Open sidebar drawer.
+
+Sidebar must work on:
+
+* User Dashboard
+* Agent Dashboard
+* Admin Dashboard
+
+========================
+4. USER DASHBOARD
+=================
+
+Dashboard must immediately show:
+
+* Greeting
+* Live clock
+* Wallet balance
+* Recent transactions
+* Quick actions
+
+DO NOT hide these behind notification clicks.
+
+Display directly when dashboard loads.
+
+Example:
+
+Good Morning, Zak 👋
+
+Current Time:
+06:30 PM
+
+Wallet Balance:
+₵190.00
+
+Recent Transactions
+
+Quick Actions:
+
+* Buy Data
+* Shop Products
+* Deposit
+* Withdraw
+* Orders
+
+========================
+5. COMPLAINT SYSTEM
+===================
+
+Create complaint system for:
+
+USER
+
+User can:
+
+* Submit complaint
+* Select category
+* Write message
+* Track complaint status
+
+Firestore:
+
+complaints
+
+Fields:
+
+{
+userId,
+userName,
+category,
+message,
+status,
+createdAt
+}
+
+========================
+6. AGENT DASHBOARD
+==================
+
+Add:
+
+Complaints Management
+
+Agent can:
+
+* View complaints
+* Reply to complaints
+* Mark resolved
+
+========================
+7. ADMIN DASHBOARD
+==================
+
+Add:
+
+Complaints Management
+
+Admin can:
+
+* View all complaints
+* Reply
+* Resolve
+* Delete complaint
+
+========================
+8. WALLET
+=========
+
+Wallet must remain visible on dashboard.
+
+Features:
+
+* Deposit
+* Withdraw
+* Transactions
+
+Collection:
+
+transactions
+
+Display Ghana currency only:
+
+₵
+
+Use:
+
+toLocaleString("en-GH")
+
+Remove all:
+
+₦
+
+========================
+9. BECOME AGENT
+===============
+
+Add:
+
+Become Agent
+
+User submits application.
+
+Admin approves.
+
+When approved:
+
+role = "agent"
+
+User gains access to:
+
+Agent Dashboard
+
+========================
+10. DATA BUNDLES
+================
+
+Keep existing SaaS-style bundle cards.
+
+Do not remove bundles.
+
+Bundles must appear:
+
+* Homepage
+* User Dashboard
+* Admin Dashboard
+
+Admin can:
+
+* Add bundle
+* Edit bundle
+* Delete bundle
+* Enable/Disable bundle
+
+Collection:
+
+bundles
+
+========================
+11. FIX AUTH
+============
+
+Project currently uses:
+
+src/context/AuthContext.tsx
+
+All pages must import:
+
+import { useAuth } from "@/context/AuthContext";
+
+NOT:
+
+import { useAuth } from "@/hooks/useAuth";
+
+Replace every broken import.
+
+Example:
+
+BAD:
+import { useAuth } from "@/hooks/useAuth";
+
+GOOD:
+import { useAuth } from "@/context/AuthContext";
+
+========================
+12. FINAL GOAL
+==============
+
+The application should behave like:
+
+Middletown Shop Ghana
+
+Main sections:
+
+* Shop Products
+* Data Bundles
+* Wallet
+* Orders
+* Complaints
+* Agent System
+* Admin System
+
+Keep existing Firebase project.
+Keep existing Paystack integration.
+Keep existing Firestore data.
+
+Only update and repair the current project.
