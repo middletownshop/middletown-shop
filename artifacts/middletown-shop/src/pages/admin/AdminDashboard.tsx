@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import type { Order } from "@/lib/types";
 import { getDocs, collection, query, orderBy, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Order } from "@/lib/types";
 import OrderStatusBadge from "@/components/OrderStatusBadge";
 import {
   Users, Package, DollarSign, Clock, Signal, MessageSquare,
@@ -73,9 +73,15 @@ export default function AdminDashboard() {
     { label: "Orders", href: "/admin/orders", desc: "View and update order status", icon: <Package className="w-5 h-5 text-purple-600" /> },
     { label: "Users", href: "/admin/users", desc: "View all customer accounts", icon: <Users className="w-5 h-5 text-blue-600" /> },
     { label: "Complaints", href: "/admin/complaints", desc: "Review and resolve complaints", icon: <MessageSquare className="w-5 h-5 text-orange-600" /> },
-    { label: "Withdrawals", href: "/admin/withdrawals", desc: "Process withdrawal requests", icon: <Wallet className="w-5 h-5 text-red-500" /> },
+    { label: "Withdrawals", href: "/admin/withdrawals", desc: "Process withdrawal requests", icon: <Wallet className="w-5 h-5 text-red-500" /> },{
+      label: "Notices",
+      href: "/admin/notices",
+      desc: "Send announcements to users",
+      icon: <MessageSquare className="w-5 h-5 text-blue-600" />
+    },
   ];
 
+  
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-6 flex items-center justify-between">

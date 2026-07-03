@@ -47,10 +47,12 @@ export type OrderStatus =
 
 export interface ShippingInfo {
   name: string;
-  address: string;
   phone: string;
+  address: string;
   city: string;
   state: string;
+  deliveryType: "delivery" | "pickup";
+  notes?: string;
 }
 
 export interface Order {

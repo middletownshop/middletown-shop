@@ -6,10 +6,61 @@ import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
 
 const CATEGORIES = [
-  { label: "Shop Products", icon: "🛒", desc: "Electronics, clothing, accessories", href: "/products?category=market" },
-  { label: "Data Bundles", icon: "📶", desc: "MTN, Telecel, AirtelTigo", href: "/bundles" },
-  { label: "Services", icon: "🛠️", desc: "Professional & freelance", href: "/products?category=service" },
-  { label: "Become Agent", icon: "🤝", desc: "Earn commissions on sales", href: "/agent/apply" },
+  {
+    label: "Shop Products",
+    icon: "🛒",
+    desc: "Electronics, clothing, accessories",
+    href: "/products?category=market",
+  },
+
+  {
+    label: "Data Bundles",
+    icon: "📶",
+    desc: "MTN, Telecel, AirtelTigo",
+    href: "/bundles",
+  },
+
+  {
+    label: "Bundle Orders",
+    icon: "📋",
+    desc: "Track your bundle purchases",
+    href: "/bundle-orders",
+  },
+
+  {
+    label: "Shop Orders",
+    icon: "📦",
+    desc: "View your product orders",
+    href: "/orders",
+  },
+
+  {
+    label: "Complaints",
+    icon: "📝",
+    desc: "Report issues and support",
+    href: "/complaints",
+  },
+
+  {
+    label: "Games",
+    icon: "🎮",
+    desc: "Play and win rewards",
+    href: "/games",
+  },
+
+  {
+    label: "Services",
+    icon: "🛠️",
+    desc: "Professional & freelance services",
+    href: "/products?category=service",
+  },
+
+  {
+    label: "Become Agent",
+    icon: "🤝",
+    desc: "Earn commissions on sales",
+    href: "/agent/apply",
+  },
 ];
 
 const BANNERS = [
@@ -96,7 +147,7 @@ export default function HomePage() {
             View all <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {CATEGORIES.map(cat => (
             <Link key={cat.label} to={cat.href}
               className="flex flex-col items-center p-5 bg-white border border-border rounded-xl hover:border-primary hover:shadow-md transition-all group text-center">

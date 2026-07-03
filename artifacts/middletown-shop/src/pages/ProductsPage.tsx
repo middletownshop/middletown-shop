@@ -1,9 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Search, SlidersHorizontal, X } from "lucide-react";
+
+import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/firestore";
 import type { Product } from "@/lib/types";
-import ProductCard from "@/components/ProductCard";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+
+const PAGE_SIZE = 12;
 
 const CATEGORIES = [
   { label: "All", value: "" },
@@ -19,153 +22,326 @@ const SORT_OPTIONS = [
   { label: "Name A-Z", value: "name_asc" },
 ];
 
-const PAGE_SIZE = 12;
-
 export default function ProductsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [sort, setSort] = useState("newest");
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   const category = searchParams.get("category") || "";
   const search = searchParams.get("search") || "";
+  const sort = searchParams.get("sort") || "newest";
+  const min = searchParams.get("min") || "";
+  const max = searchParams.get("max") || "";
+  const page = Number(searchParams.get("page") || 1);
 
   useEffect(() => {
-    setLoading(true);
-    setPage(1);
-    getProducts({ enabled: true })
-      .then(setAllProducts)
-      .catch(() => setAllProducts([]))
-      .finally(() => setLoading(false));
+    async function loadProducts() {
+      try {
+        setLoading(true);
+        const data = await getProducts({ enabled: true });
+        setProducts(data);
+      } catch {
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadProducts();
   }, []);
 
-  const filtered = allProducts
-    .filter(p => {
-      if (!category) return true;
-      if (category === "market") return ["market", "physical", "digital"].includes(p.category);
-      return p.category === category;
-    })
-    .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase()))
-    .filter(p => !priceMin || p.price >= Number(priceMin))
-    .filter(p => !priceMax || p.price <= Number(priceMax));
+  const updateParams = (updates: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams);
 
-  const sorted = [...filtered].sort((a, b) => {
-    if (sort === "price_asc") return a.price - b.price;
-    if (sort === "price_desc") return b.price - a.price;
-    if (sort === "name_asc") return a.name.localeCompare(b.name);
-    return 0;
-  });
+    Object.entries(updates).forEach(([key, value]) => {
+      if (!value) {
+        params.delete(key);
+      } else {
+        params.set(key, value);
+      }
+    });
 
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE);
-  const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    if (!updates.page) {
+      params.set("page", "1");
+    }
 
-  const clearFilters = () => { setPriceMin(""); setPriceMax(""); setSort("newest"); setSearchParams({}); };
-  const hasFilters = !!category || !!search || !!priceMin || !!priceMax;
+    setSearchParams(params);
+  };
 
-  const activeLabel = CATEGORIES.find(c => c.value === category)?.label || "All Products";
+  const clearFilters = () => {
+    setSearchParams({});
+  };
+
+  const filteredProducts = useMemo(() => {
+    return products
+      .filter(product => {
+        if (!category) return true;
+
+        if (category === "market") {
+          return ["market", "physical", "digital"].includes(
+            product.category
+          );
+        }
+
+        return product.category === category;
+      })
+      .filter(product => {
+        if (!search) return true;
+
+        const query = search.toLowerCase();
+
+        return (
+          product.name.toLowerCase().includes(query) ||
+          (product.description || "")
+            .toLowerCase()
+            .includes(query)
+        );
+      })
+      .filter(product => {
+        if (!min) return true;
+        return product.price >= Number(min);
+      })
+      .filter(product => {
+        if (!max) return true;
+        return product.price <= Number(max);
+      });
+  }, [products, category, search, min, max]);
+
+  const sortedProducts = useMemo(() => {
+    const result = [...filteredProducts];
+
+    switch (sort) {
+      case "price_asc":
+        return result.sort((a, b) => a.price - b.price);
+
+      case "price_desc":
+        return result.sort((a, b) => b.price - a.price);
+
+      case "name_asc":
+        return result.sort((a, b) =>
+          a.name.localeCompare(b.name)
+        );
+
+      case "newest":
+      default:
+        return result.sort(
+          (a: any, b: any) =>
+            (b.createdAt?.toDate?.()?.getTime?.() || 0) -
+            (a.createdAt?.toDate?.()?.getTime?.() || 0)
+        );
+    }
+  }, [filteredProducts, sort]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(sortedProducts.length / PAGE_SIZE)
+  );
+
+  const paginatedProducts = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+
+    return sortedProducts.slice(
+      start,
+      start + PAGE_SIZE
+    );
+  }, [sortedProducts, page]);
+
+  const activeCategory =
+    CATEGORIES.find(c => c.value === category)?.label ||
+    "All Products";
+
+  const hasFilters =
+    !!category ||
+    !!search ||
+    !!min ||
+    !!max ||
+    sort !== "newest";
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-4">
+      {/* HEADER */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">
-            {search ? `Results for "${search}"` : activeLabel}
+          <h1 className="text-2xl font-bold">
+            {search
+              ? `Results for "${search}"`
+              : activeCategory}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{filtered.length} product{filtered.length !== 1 ? "s" : ""} found</p>
+
+          <p className="text-sm text-muted-foreground">
+            {filteredProducts.length} product
+            {filteredProducts.length !== 1 ? "s" : ""} found
+          </p>
         </div>
+
         <div className="flex items-center gap-2">
           {hasFilters && (
-            <button onClick={clearFilters} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive">
-              <X className="w-3 h-3" /> Clear
+            <button
+              onClick={clearFilters}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-destructive"
+            >
+              <X size={16} />
+              Clear
             </button>
           )}
-          <button onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm transition-colors ${showFilters ? "bg-primary text-white border-primary" : "border-border hover:border-primary"}`}>
-            <SlidersHorizontal className="w-4 h-4" />
-            <span className="hidden sm:block">Filters</span>
+
+          <button
+            onClick={() =>
+              setShowFilters(prev => !prev)
+            }
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border ${
+              showFilters
+                ? "bg-primary text-white border-primary"
+                : "border-border"
+            }`}
+          >
+            <SlidersHorizontal size={16} />
+            Filters
           </button>
-          <select value={sort} onChange={e => setSort(e.target.value)}
-            className="border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30">
-            {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+
+          <select
+            value={sort}
+            onChange={e =>
+              updateParams({
+                sort: e.target.value,
+              })
+            }
+            className="border rounded-lg px-3 py-2"
+          >
+            {SORT_OPTIONS.map(option => (
+              <option
+                key={option.value}
+                value={option.value}
+              >
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {showFilters && (
-          <aside className="w-52 flex-shrink-0">
-            <div className="bg-white border border-border rounded-xl p-4 sticky top-24">
-              <h3 className="font-semibold text-foreground text-sm mb-4">Filters</h3>
-              <div className="mb-5">
-                <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Category</h4>
-                <div className="space-y-1">
-                  {CATEGORIES.map(cat => (
-                    <button key={cat.value} onClick={() => { setPage(1); setSearchParams(cat.value ? { category: cat.value } : {}); }}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg text-sm transition-colors ${
-                        category === cat.value ? "bg-primary/10 text-primary font-semibold" : "text-muted-foreground hover:bg-accent"
-                      }`}>
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
+          <aside className="w-full lg:w-64">
+            <div className="border rounded-xl p-4 sticky top-24">
+              <h3 className="font-semibold mb-4">
+                Filters
+              </h3>
+
+              <div className="space-y-2 mb-6">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.value}
+                    onClick={() =>
+                      updateParams({
+                        category: cat.value,
+                      })
+                    }
+                    className={`block w-full text-left px-3 py-2 rounded-lg ${
+                      category === cat.value
+                        ? "bg-primary/10 text-primary"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
               </div>
-              <div className="mb-5">
-                <h4 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Price Range (₵)</h4>
-                <div className="flex gap-2">
-                  <input type="number" value={priceMin} onChange={e => setPriceMin(e.target.value)} placeholder="Min"
-                    className="w-full border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                  <input type="number" value={priceMax} onChange={e => setPriceMax(e.target.value)} placeholder="Max"
-                    className="w-full border border-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-                </div>
+
+              <div className="space-y-2">
+                <input
+                  type="number"
+                  placeholder="Min Price"
+                  value={min}
+                  onChange={e =>
+                    updateParams({
+                      min: e.target.value,
+                    })
+                  }
+                  className="w-full border rounded-lg px-3 py-2"
+                />
+
+                <input
+                  type="number"
+                  placeholder="Max Price"
+                  value={max}
+                  onChange={e =>
+                    updateParams({
+                      max: e.target.value,
+                    })
+                  }
+                  className="w-full border rounded-lg px-3 py-2"
+                />
               </div>
-              <button onClick={clearFilters} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 border border-border rounded-lg">
-                Clear All
-              </button>
             </div>
           </aside>
         )}
 
-        <div className="flex-1 min-w-0">
-          {search && (
-            <div className="flex items-center gap-2 mb-4 p-3 bg-blue-50 rounded-lg">
-              <Search className="w-4 h-4 text-blue-600" />
-              <span className="text-sm text-blue-700">Searching: <strong>{search}</strong></span>
-              <button onClick={() => setSearchParams({})} className="ml-auto text-blue-500"><X className="w-4 h-4" /></button>
-            </div>
-          )}
-
+        <div className="flex-1">
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {Array.from({ length: 8 }).map((_, i) => <div key={i} className="bg-gray-200 rounded-lg aspect-square animate-pulse" />)}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-square rounded-lg bg-gray-200 animate-pulse"
+                />
+              ))}
             </div>
-          ) : paginated.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="text-5xl mb-4">📦</div>
-              <h3 className="text-lg font-bold text-foreground mb-2">No products found</h3>
-              <p className="text-muted-foreground text-sm mb-4">{search ? `No results for "${search}"` : "No products in this category yet"}</p>
-              <button onClick={clearFilters} className="text-primary hover:underline text-sm">Browse all products</button>
+          ) : paginatedProducts.length === 0 ? (
+            <div className="text-center py-20">
+              <h3 className="text-xl font-semibold mb-2">
+                No products found
+              </h3>
+
+              <button
+                onClick={clearFilters}
+                className="text-primary hover:underline"
+              >
+                Browse all products
+              </button>
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {paginated.map(p => <ProductCard key={p.id} product={p} />)}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {paginatedProducts.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                  />
+                ))}
               </div>
+
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
-                  <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                    className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent disabled:opacity-40">Previous</button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                    <button key={p} onClick={() => setPage(p)}
-                      className={`w-9 h-9 rounded-lg text-sm font-medium ${page === p ? "bg-primary text-white" : "border border-border hover:bg-accent"}`}>
-                      {p}
-                    </button>
-                  ))}
-                  <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                    className="px-4 py-2 border border-border rounded-lg text-sm hover:bg-accent disabled:opacity-40">Next</button>
+                <div className="flex justify-center gap-2 mt-8">
+                  <button
+                    disabled={page === 1}
+                    onClick={() =>
+                      updateParams({
+                        page: String(page - 1),
+                      })
+                    }
+                    className="px-4 py-2 border rounded-lg disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+
+                  <span className="px-4 py-2">
+                    {page} / {totalPages}
+                  </span>
+
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() =>
+                      updateParams({
+                        page: String(page + 1),
+                      })
+                    }
+                    className="px-4 py-2 border rounded-lg disabled:opacity-40"
+                  >
+                    Next
+                  </button>
                 </div>
               )}
             </>

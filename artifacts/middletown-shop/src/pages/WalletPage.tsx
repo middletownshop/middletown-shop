@@ -1,16 +1,23 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import type { WalletTransaction } from "@/lib/types";
-import { getWalletTransactions, addWalletDeposit, requestWalletWithdrawal } from "@/lib/firestore";
+import {
+  getWalletTransactions,
+  requestWalletWithdrawal,
+  addWalletDeposit,
+  getUserNotifications,
+  markNotificationAsRead
+} from "@/lib/firestore";
 import { Wallet, ArrowDownLeft, ArrowUpRight, Plus, Minus, Clock, CheckCircle, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 
-type Tab = "overview" | "deposit" | "withdraw" | "history";
+type Tab = "overview" | "deposit" | "withdraw" | "history" | "momo";
 
 export default function WalletPage() {
   const { user, userProfile, refreshProfile } = useAuth();
   const [tab, setTab] = useState<Tab>("overview");
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingTx, setLoadingTx] = useState(true);
 
   // Deposit state
@@ -26,49 +33,99 @@ export default function WalletPage() {
 
   useEffect(() => {
     if (!user) return;
+
     setLoadingTx(true);
+
     getWalletTransactions(user.uid)
       .then(setTransactions)
       .catch(() => setTransactions([]))
       .finally(() => setLoadingTx(false));
+
+    getUserNotifications(user.uid)
+      .then(setNotifications)
+      .catch(() => setNotifications([]));
+
   }, [user, tab]);
 
   const balance = Number(userProfile?.walletBalance || 0);
 
+  const handlePaystackSuccess = async (response: any) => {
+    try {
+      setDepositing(true);
+
+      console.log("PAYSTACK SUCCESS:", response.reference);
+
+      await addWalletDeposit(
+        user!.uid,
+        Number(depositAmount),
+        response.reference
+      );
+
+      await refreshProfile();
+
+      const txs = await getWalletTransactions(user!.uid);
+      setTransactions(txs);
+
+      setDepositAmount("");
+
+      toast.success(`₵${depositAmount} added to wallet`);
+
+      setTab("overview");
+    } catch (err) {
+      console.error("WALLET UPDATE ERROR:", err);
+      toast.error("Failed to update wallet");
+    } finally {
+      setDepositing(false);
+    }
+  };
   const handleDeposit = (e: React.FormEvent) => {
     e.preventDefault();
+
     const amount = parseFloat(depositAmount);
-    if (!amount || amount < 1) { toast.error("Minimum deposit is ₵1"); return; }
+
+    if (!amount || amount < 50) {
+      toast.error("Minimum deposit is ₵50");
+      return;
+    }
+
     if (!user) return;
 
-    const handler = (window as any).PaystackPop?.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-      email: user.email,
-      amount: Math.round(amount * 100),
-      currency: "GHS",
-      ref: `WALLET-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
-      metadata: { type: "wallet_deposit", userId: user.uid },
-      callback: async (response: { reference: string }) => {
-        setDepositing(true);
-        try {
-          await addWalletDeposit(user.uid, amount, response.reference);
-          await refreshProfile();
-          const txs = await getWalletTransactions(user.uid);
-          setTransactions(txs);
-          setDepositAmount("");
-          toast.success(`₵${amount.toLocaleString("en-GH")} added to wallet!`);
-          setTab("overview");
-        } catch {
-          toast.error("Failed to update wallet. Contact support.");
-        } finally {
-          setDepositing(false);
-        }
-      },
-      onClose: () => {},
-    });
-    handler?.openIframe();
-  };
+    if (!(window as any).PaystackPop) {
+      toast.error("Paystack not loaded");
+      return;
+    }
 
+    const percentageFee = 0.0195;
+    const fixedFee = 0.10;
+
+    const totalToPay =
+      Math.ceil(((amount + fixedFee) / (1 - percentageFee)) * 100) / 100;
+
+    const handler = (window as any).PaystackPop.setup({
+      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+
+      email:
+        user.email ||
+        userProfile?.email ||
+        `${user.uid}@wallet.com`,
+
+      amount: Math.round(totalToPay * 100),
+
+      currency: "GHS",
+
+      ref: `WALLET-${Date.now()}`,
+
+      callback: function (response: any) {
+        handlePaystackSuccess(response);
+      },
+
+      onClose: function () {
+        toast.error("Payment cancelled");
+      },
+    });
+
+    handler.openIframe();
+  };
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(withdrawAmount);
@@ -142,7 +199,7 @@ export default function WalletPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-muted rounded-lg p-1">
-        {(["overview", "deposit", "withdraw", "history"] as Tab[]).map(t => (
+        {(["overview", "deposit", "withdraw","momo", "history"] as Tab[]).map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-colors capitalize ${
               tab === t ? "bg-white shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
@@ -200,6 +257,61 @@ export default function WalletPage() {
           )}
         </div>
       )}
+      <div className="mb-6">
+        <h3 className="font-semibold text-foreground mb-3">
+          Notifications
+        </h3>
+
+        {notifications.length === 0 ? (
+          <div className="bg-white border border-border rounded-xl p-4 text-sm text-muted-foreground">
+            No notifications yet.
+          </div>
+        ) : (
+          notifications.slice(0, 5).map((notice: any) => (
+            <div
+              key={notice.id}
+              onClick={async () => {
+                if (!notice.read) {
+                  await markNotificationAsRead(notice.id);
+
+                  setNotifications(prev =>
+                    prev.map(n =>
+                      n.id === notice.id
+                        ? { ...n, read: true }
+                        : n
+                    )
+                  );
+                }
+              }}
+              className={`rounded-xl p-4 mb-3 border cursor-pointer transition ${
+                notice.read
+                  ? "bg-white border-border"
+                  : "bg-blue-50 border-blue-500"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <p className="font-semibold">{notice.title}</p>
+
+                {!notice.read && (
+                  <span className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                    NEW
+                  </span>
+                )}
+              </div>
+
+              <p className="text-sm text-muted-foreground mt-1">
+                {notice.message}
+              </p>
+
+              <p className="text-xs text-gray-500 mt-2">
+                {notice.createdAt?.toDate
+                  ? notice.createdAt.toDate().toLocaleString("en-GH")
+                  : ""}
+              </p>
+            </div>
+          ))
+        )}
+      </div>
 
       {/* Deposit */}
       {tab === "deposit" && (
@@ -217,7 +329,7 @@ export default function WalletPage() {
             <div>
               <p className="text-xs text-muted-foreground mb-2">Quick amounts</p>
               <div className="flex flex-wrap gap-2">
-                {[10, 20, 50, 100, 200, 500].map(a => (
+                {[50, 100, 200, 500].map(a => (
                   <button key={a} type="button" onClick={() => setDepositAmount(String(a))}
                     className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                       depositAmount === String(a) ? "bg-primary text-white border-primary" : "border-border hover:border-primary hover:text-primary"
@@ -229,7 +341,19 @@ export default function WalletPage() {
             </div>
             <button type="submit" disabled={depositing || !depositAmount}
               className="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-bold transition-colors disabled:opacity-50">
-              {depositing ? "Processing..." : `Pay ₵${depositAmount || "0"} via Paystack`}
+              {depositing
+                ? "Processing..."
+                : `Pay ₵${
+                    depositAmount
+                      ? (
+                          Math.ceil(
+                            ((Number(depositAmount) + 0.1) /
+                              (1 - 0.0195)) *
+                              100
+                          ) / 100
+                        ).toFixed(2)
+                      : "0"
+                  } via Paystack`}
             </button>
           </form>
         </div>
@@ -238,42 +362,60 @@ export default function WalletPage() {
       {/* Withdraw */}
       {tab === "withdraw" && (
         <div className="bg-white border border-border rounded-xl p-6">
-          <h3 className="font-bold text-foreground mb-1">Request Withdrawal</h3>
-          <p className="text-sm text-muted-foreground mb-4">Processed within 24 business hours</p>
-          <form onSubmit={handleWithdraw} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Amount (₵) — Available: ₵{balance.toLocaleString("en-GH")}</label>
-              <input type="number" min="10" max={balance} step="0.01" value={withdrawAmount}
-                onChange={e => setWithdrawAmount(e.target.value)} required
-                placeholder="Minimum ₵10"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Bank Name</label>
-              <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} required
-                placeholder="e.g. GCB Bank, Ecobank"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Account Number</label>
-              <input type="text" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} required
-                placeholder="Enter bank account number"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Account Name</label>
-              <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)} required
-                placeholder="Account holder's full name"
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
-            </div>
-            <button type="submit" disabled={withdrawing || !withdrawAmount}
-              className="w-full bg-primary hover:bg-primary/90 text-white py-3 rounded-lg font-bold transition-colors disabled:opacity-50">
-              {withdrawing ? "Submitting..." : "Submit Withdrawal Request"}
-            </button>
-          </form>
+
+          {/* Coming Soon Message */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+            <h3 className="font-bold text-yellow-700 mb-2">
+              Withdrawals Coming Soon
+            </h3>
+            <p className="text-sm text-yellow-600">
+              This feature is currently disabled and will be available shortly.
+            </p>
+          </div>
+
         </div>
       )}
 
+      {tab === "momo" && (
+        <div className="bg-white border border-border rounded-xl p-6 space-y-4">
+
+          <h3 className="font-bold text-foreground text-lg">
+            Momo Direct Deposit
+          </h3>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+            <p className="font-semibold mb-1">How it works</p>
+            <p>
+              Send your deposit directly via Mobile Money to avoid Paystack fees.
+              After payment, please notify us for quick wallet credit.
+            </p>
+          </div>
+
+          <div className="space-y-2 text-sm">
+            <p><strong>MoMo Number:</strong> 0257869403</p>
+            <p><strong>Name:</strong> FRANCIS DZAMESI</p>
+          </div>
+
+          <div className="bg-gray-50 p-3 rounded-lg text-sm">
+            <p className="font-semibold mb-1">Message to send</p>
+            <p>
+              Good day Middletown Shop, I would like to make a MoMo deposit to my wallet account. Kindly assist with confirmation. Thank you.
+            </p>
+          </div>
+
+          <a
+            href={`https://wa.me/233257869403?text=${encodeURIComponent(
+              "Good day Middletown Shop, I would like to make a MoMo deposit to my wallet account. Kindly assist with confirmation. Thank you."
+            )}`}
+            target="_blank"
+            className="block text-center bg-green-600 text-white py-2 rounded-lg font-semibold"
+          >
+            Send WhatsApp Message
+          </a>
+
+        </div>
+      )}
+      
       {/* Full history */}
       {tab === "history" && (
         <div className="space-y-3">
@@ -314,3 +456,4 @@ export default function WalletPage() {
     </div>
   );
 }
+

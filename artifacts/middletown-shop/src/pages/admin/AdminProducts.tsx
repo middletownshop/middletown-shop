@@ -22,6 +22,7 @@ export default function AdminProducts() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deliveryInput, setDeliveryInput] = useState("");
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
@@ -40,10 +41,26 @@ export default function AdminProducts() {
 
   const openEdit = (p: Product) => {
     setForm({
-      name: p.name, description: p.description, category: p.category,
-      price: p.price, stock: p.stock, enabled: p.enabled, featured: p.featured,
-      images: [...p.images], deliveryOptions: [...(p.deliveryOptions || [])],
+      name: p.name || "",
+      description: p.description || "",
+
+      category: p.category || "market",
+
+      price: Number(p.price || 0),
+      stock: Number(p.stock || 0),
+
+      enabled: p.enabled ?? true,
+      featured: p.featured ?? false,
+
+      images:
+      p.images?.length
+        ? [...p.images]
+        : (p as any).imageUrl
+        ? [(p as any).imageUrl]
+        : [],
+      deliveryOptions: [...(p.deliveryOptions || [])],
     });
+
     setEditId(p.id);
     setDeliveryInput("");
     setShowForm(true);
@@ -80,20 +97,40 @@ export default function AdminProducts() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || form.price <= 0) { toast.error("Name and valid price are required"); return; }
+
+    if (!form.name || form.price <= 0) {
+      toast.error("Name and valid price are required");
+      return;
+    }
+
     setSaving(true);
+
     try {
+      const productData = {
+        ...form,
+        category: form.category || "market",
+        images: form.images || [],
+        deliveryOptions: form.deliveryOptions || [],
+        enabled: form.enabled ?? true,
+        featured: form.featured ?? false,
+        stock: Number(form.stock || 0),
+        price: Number(form.price || 0),
+      };
+
       if (editId) {
-        await updateProduct(editId, form);
+        await updateProduct(editId, productData);
         toast.success("Product updated");
       } else {
-        await createProduct(form);
+        await createProduct(productData);
         toast.success("Product created");
       }
+
       setShowForm(false);
       load();
-    } catch {
-      toast.error("Failed to save product");
+
+    } catch (error: any) {
+      console.error("SAVE PRODUCT ERROR:", error);
+      toast.error(error?.message || "Failed to save product");
     } finally {
       setSaving(false);
     }
@@ -253,6 +290,32 @@ export default function AdminProducts() {
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">Product Images</label>
                 <div className="flex flex-wrap gap-2 mb-2">
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="url"
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      placeholder="Paste image URL here"
+                      className="flex-1 border border-border rounded-lg px-3 py-2 text-sm"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!imageUrlInput.trim()) return;
+
+                        setForm((f) => ({
+                          ...f,
+                          images: [...f.images, imageUrlInput.trim()],
+                        }));
+
+                        setImageUrlInput("");
+                      }}
+                      className="px-3 py-2 bg-primary text-white rounded-lg"
+                    >
+                      Add URL
+                    </button>
+                  </div>
                   {form.images.map((img, i) => (
                     <div key={i} className="relative w-16 h-16">
                       <img src={img} alt="" className="w-full h-full object-cover rounded-lg border border-border" />

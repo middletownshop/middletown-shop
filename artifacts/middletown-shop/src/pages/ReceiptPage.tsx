@@ -15,6 +15,13 @@ export default function ReceiptPage() {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }, []);
+  
+  useEffect(() => {
     if (!id) return;
     getReceipt(id)
       .then(setReceipt)
@@ -77,15 +84,18 @@ export default function ReceiptPage() {
       </div>
 
       {/* Receipt document */}
-      <div ref={receiptRef} className="bg-white border border-border rounded-xl p-8 shadow-sm">
+      <div
+        ref={receiptRef}
+        className="bg-white border border-border rounded-xl shadow-sm p-4 sm:p-6 lg:p-8 overflow-hidden"
+      >
         {/* Header */}
-        <div className="flex justify-between items-start mb-6 pb-6 border-b border-border">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 pb-6 border-b border-border">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
                 <span className="text-white font-bold text-sm">M</span>
               </div>
-              <span className="font-bold text-xl text-primary">Middletown Shop</span>
+              <span className="font-bold text-lg sm:text-2xl text-primary">Middletown Shop</span>
             </div>
             <p className="text-xs text-muted-foreground">Ghana's Trusted Marketplace</p>
           </div>
@@ -99,11 +109,11 @@ export default function ReceiptPage() {
         </div>
 
         {/* Customer & Order info */}
-        <div className="grid grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
           <div>
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Bill To</h4>
             <p className="font-semibold text-foreground text-sm">{receipt.customerName}</p>
-            <p className="text-sm text-muted-foreground">{receipt.customerEmail}</p>
+            <p className="text-sm text-muted-foreground break-all">{receipt.customerEmail}</p>
           </div>
           <div>
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Order Info</h4>

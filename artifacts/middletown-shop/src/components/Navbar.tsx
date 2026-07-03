@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ShoppingCart, Search, Menu, X, Bell, User, LogOut, Settings, Package, Signal, Wallet, TrendingUp } from "lucide-react";
 import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { collection, onSnapshot } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
@@ -18,9 +19,32 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   const { user, isAdmin, isAgent, userProfile } = useAuth();
   const { cartItems } = useCart();
   const navigate = useNavigate();
+
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const hour = currentTime.getHours();
+
+  const greeting =
+    hour < 12
+      ? "Good Morning"
+      : hour < 18
+      ? "Good Afternoon"
+      : "Good Evening";
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +54,32 @@ export default function Navbar() {
     }
   };
 
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0);
+      return;
+    }
+
+    const unsubscribe = onSnapshot(
+      collection(db, "notifications"),
+      (snapshot) => {
+        let count = 0;
+
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data() as any;
+
+          if (data.userId === user.uid && data.read === false) {
+            count++;
+          }
+        });
+
+        setUnreadCount(count);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user]);
+  
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -40,7 +90,7 @@ export default function Navbar() {
     }
     setUserMenuOpen(false);
   };
-
+  
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-border">
       {/* Top bar */}
@@ -59,7 +109,7 @@ export default function Navbar() {
       </div>
 
       {/* Main nav */}
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+      <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
         <Link to="/" className="flex-shrink-0 flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
             <span className="text-white font-bold text-sm">M</span>
@@ -78,6 +128,22 @@ export default function Navbar() {
         </form>
 
         <div className="flex items-center gap-2 ml-auto">
+
+        {user && userProfile && (
+        <div className="flex flex-col items-end mr-4 bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
+            <span className="text-xs font-medium text-foreground">
+              {greeting}, {userProfile.displayName}
+            </span>
+
+            <span className="text-xs text-muted-foreground">
+              {currentTime.toLocaleTimeString("en-GH")}
+            </span>
+
+            <span className="text-sm font-bold text-green-600">
+              ₵{Number(userProfile.walletBalance || 0).toLocaleString("en-GH")}
+            </span>
+          </div>
+        )}
           <Link to="/bundles" className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm font-medium">
             <Signal className="w-4 h-4 text-green-600" />
             <span className="hidden lg:block">Bundles</span>
@@ -101,9 +167,15 @@ export default function Navbar() {
                 <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center">
                   <User className="w-4 h-4 text-primary" />
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-foreground max-w-[100px] truncate">
-                  {userProfile?.displayName || user.email?.split("@")[0]}
-                </span>
+                <div className="hidden sm:flex flex-col text-left max-w-[120px]">
+                  <span className="text-sm font-medium text-foreground truncate">
+                    {userProfile?.displayName || user.email?.split("@")[0]}
+                  </span>
+
+                  <span className="text-[10px] text-green-600 font-semibold">
+                    ₵{Number(userProfile?.walletBalance || 0).toLocaleString("en-GH")}
+                  </span>
+                </div>
               </button>
               {userMenuOpen && (
                 <div className="absolute right-0 mt-1 w-52 bg-white border border-border rounded-lg shadow-lg py-1 z-50">
@@ -157,9 +229,20 @@ export default function Navbar() {
           )}
 
           {user && (
-            <Link to="/dashboard" className="relative p-2 rounded-lg hover:bg-accent transition-colors">
-              <Bell className="w-5 h-5 text-foreground" />
-            </Link>
+            <button
+              onClick={() => navigate("/notifications")}
+              className="relative flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-sm font-medium"
+            >
+              <Bell className="w-5 h-5" />
+
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+
+              <span className="hidden sm:block">Notifications</span>
+            </button>
           )}
 
           <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors">

@@ -29,8 +29,41 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   return snap.docs.map(d => d.data() as UserProfile);
 }
 
-// ─── Products ─────────────────────────────────────────────────────────────────
+export async function getUserNotifications(userId: string) {
+  const q = query(
+    collection(db, "notifications"),
+    where("userId", "==", userId),
+    orderBy("createdAt", "desc")
+  );
 
+  const snap = await getDocs(q);
+
+  return snap.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+}
+
+export async function markNotificationAsRead(id: string) {
+  await updateDoc(doc(db, "notifications", id), {
+    read: true,
+  });
+}
+
+// ─── Products ─────────────────────────────────────────────────────────────────
+function normalizeProduct(docId: string, data: any): Product {
+  return {
+    id: docId,
+    ...data,
+    images: Array.isArray(data.images)
+      ? data.images
+      : data.image
+      ? [data.image]
+      : data.imageUrl
+      ? [data.imageUrl]
+      : [],
+  } as Product;
+}
 export async function getProducts(opts?: { category?: string; enabled?: boolean }): Promise<Product[]> {
   let q;
   if (opts?.enabled !== undefined) {
@@ -39,7 +72,9 @@ export async function getProducts(opts?: { category?: string; enabled?: boolean 
     q = query(collection(db, "products"), orderBy("createdAt", "desc"));
   }
   const snap = await getDocs(q);
-  let items = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+  let items = snap.docs.map(d =>
+    normalizeProduct(d.id, d.data())
+  );
 
   if (opts?.category === "market") {
     items = items.filter(p => ["market", "physical", "digital"].includes(p.category));
@@ -55,14 +90,26 @@ export async function getProducts(opts?: { category?: string; enabled?: boolean 
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
-  const q = query(collection(db, "products"), where("featured", "==", true), where("enabled", "==", true), limit(8));
+  const q = query(
+    collection(db, "products"),
+    where("featured", "==", true),
+    where("enabled", "==", true),
+    limit(8)
+  );
+
   const snap = await getDocs(q);
-  return snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+
+  return snap.docs.map(d =>
+    normalizeProduct(d.id, d.data())
+  );
 }
 
 export async function getProduct(id: string): Promise<Product | null> {
   const snap = await getDoc(doc(db, "products", id));
-  return snap.exists() ? ({ id: snap.id, ...snap.data() } as Product) : null;
+
+  return snap.exists()
+    ? normalizeProduct(snap.id, snap.data())
+    : null;
 }
 
 export async function createProduct(data: Omit<Product, "id" | "createdAt">): Promise<string> {
@@ -119,32 +166,89 @@ export async function getAllOrders(): Promise<Order[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: OrderStatus, message: string): Promise<void> {
-  await updateDoc(doc(db, "orders", orderId), { status, updatedAt: serverTimestamp() });
+  console.time("updateOrderStatus");
+
+  console.time("update-order-doc");
+  await updateDoc(doc(db, "orders", orderId), {
+    status,
+    updatedAt: serverTimestamp(),
+  });
+  console.timeEnd("update-order-doc");
+
+  console.time("tracking");
   const trackRef = doc(db, "tracking", orderId);
   const trackSnap = await getDoc(trackRef);
-  const newUpdate = { status, message, timestamp: Timestamp.now() };
+
+  const newUpdate = {
+    status,
+    message,
+    timestamp: Timestamp.now(),
+  };
+
   if (trackSnap.exists()) {
-    await updateDoc(trackRef, { updates: [...(trackSnap.data().updates || []), newUpdate] });
+    await updateDoc(trackRef, {
+      updates: [...(trackSnap.data().updates || []), newUpdate],
+    });
   } else {
-    await setDoc(trackRef, { orderId, updates: [newUpdate] });
-  }
-  const orderSnap = await getDoc(doc(db, "orders", orderId));
-  if (orderSnap.exists()) {
-    const order = orderSnap.data();
-    await addDoc(collection(db, "notifications"), {
-      userId: order.customerId, title: `Order ${status.replace(/_/g, " ")}`,
-      message: `Your order #${order.orderId} is now ${status.replace(/_/g, " ")}. ${message}`,
-      read: false, type: "order_update", createdAt: serverTimestamp(),
+    await setDoc(trackRef, {
+      orderId,
+      updates: [newUpdate],
     });
   }
+  console.timeEnd("tracking");
+
+  console.time("notification");
+  const orderSnap = await getDoc(doc(db, "orders", orderId));
+
+  if (orderSnap.exists()) {
+    const order = orderSnap.data();
+
+    await addDoc(collection(db, "notifications"), {
+      userId: order.customerId,
+      title: `Order ${status.replace(/_/g, " ")}`,
+      message: `Your order #${order.orderId} is now ${status.replace(/_/g, " ")}. ${message}`,
+      read: false,
+      type: "order_update",
+      createdAt: serverTimestamp(),
+    });
+  }
+  console.timeEnd("notification");
+
+  console.timeEnd("updateOrderStatus");
 }
 
-export async function markOrderPaid(orderId: string, reference: string, amount: number, currency: string, paidAt: string): Promise<void> {
-  await updateDoc(doc(db, "orders", orderId), { status: "paid" as OrderStatus, paymentVerified: true, updatedAt: serverTimestamp() });
-  await addDoc(collection(db, "transactions"), {
-    orderId, reference, amount, currency, status: "success", paidAt, createdAt: serverTimestamp(),
+export async function markOrderPaid(
+  orderId: string,
+  reference: string,
+  amount: number,
+  currency: string,
+  paidAt: string
+): Promise<void> {
+
+  await updateDoc(doc(db, "orders", orderId), {
+    status: "paid" as OrderStatus,
+    paymentVerified: true,
+    updatedAt: serverTimestamp(),
   });
-  await updateOrderStatus(orderId, "paid", "Payment confirmed successfully");
+
+  await addDoc(collection(db, "transactions"), {
+    orderId,
+    reference,
+    amount,
+    currency,
+    status: "success",
+    paidAt,
+    createdAt: serverTimestamp(),
+  });
+
+  // Don't block the checkout waiting for tracking/notifications.
+  updateOrderStatus(
+    orderId,
+    "paid",
+    "Payment confirmed successfully"
+  ).catch((error) => {
+    console.error("Failed to update tracking/notification:", error);
+  });
 }
 
 // ─── Receipts ─────────────────────────────────────────────────────────────────

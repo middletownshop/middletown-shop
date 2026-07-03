@@ -92,7 +92,7 @@ export default function AdminOrders() {
                   <tr key={order.id} data-testid={`order-admin-row-${order.id}`} className="border-t border-border hover:bg-muted/20 transition-colors">
                     <td className="px-5 py-3">
                       <p className="font-semibold text-foreground">{order.orderId}</p>
-                      <p className="text-xs text-muted-foreground">{order.items.length} item(s)</p>
+                      <p className="text-xs text-muted-foreground">{order.items?.length ?? 0} item(s)</p>
                     </td>
                     <td className="px-5 py-3">
                       <p className="font-medium text-foreground">{order.customerName}</p>

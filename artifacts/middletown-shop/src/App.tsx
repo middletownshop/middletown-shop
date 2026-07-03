@@ -6,6 +6,9 @@ import { RequireAuth, RequireAdmin } from "@/components/RequireAuth";
 import { DashboardLayout } from "@/components/DashboardSidebar";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ScrollToTop from "@/components/ScrollToTop";
+import PaystackSuccess from "./pages/PaystackSuccess";
+import NotificationsPage from "@/pages/NotificationsPage";
 
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
@@ -34,6 +37,7 @@ import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminBundles from "@/pages/admin/AdminBundles";
 import AdminComplaints from "@/pages/admin/AdminComplaints";
 import AdminWithdrawals from "@/pages/admin/AdminWithdrawals";
+import AdminNotices from "@/pages/admin/AdminNotices";
 
 function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -69,7 +73,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <ScrollToTop />
       <AuthProvider>
+    
         <CartProvider>
           <Toaster
             position="top-right"
@@ -99,7 +105,16 @@ export default function App() {
             <Route path="/admin/bundles" element={<RequireAdmin><AdminLayout><AdminBundles /></AdminLayout></RequireAdmin>} />
             <Route path="/admin/complaints" element={<RequireAdmin><AdminLayout><AdminComplaints /></AdminLayout></RequireAdmin>} />
             <Route path="/admin/withdrawals" element={<RequireAdmin><AdminLayout><AdminWithdrawals /></AdminLayout></RequireAdmin>} />
-
+            <Route
+              path="/admin/notices"
+              element={
+                <RequireAdmin>
+                  <AdminLayout>
+                    <AdminNotices />
+                  </AdminLayout>
+                </RequireAdmin>
+              }
+            />
             {/* Dashboard shell routes (sidebar) */}
             <Route path="/dashboard" element={<RequireAuth><DashboardShell><DashboardPage /></DashboardShell></RequireAuth>} />
             <Route path="/wallet" element={<RequireAuth><DashboardShell><WalletPage /></DashboardShell></RequireAuth>} />
@@ -109,13 +124,27 @@ export default function App() {
             <Route path="/agent/dashboard" element={<RequireAuth><DashboardShell><AgentDashboardPage /></DashboardShell></RequireAuth>} />
             <Route path="/agent/complaints" element={<RequireAuth><DashboardShell><AgentComplaintsPage /></DashboardShell></RequireAuth>} />
             <Route path="/profile" element={<RequireAuth><DashboardShell><ProfilePage /></DashboardShell></RequireAuth>} />
+            <Route
+              path="/notifications"
+              element={
+                <RequireAuth>
+                  <DashboardShell>
+                    <NotificationsPage />
+                  </DashboardShell>
+                </RequireAuth>
+              }
+            />
             <Route path="/orders" element={<RequireAuth><DashboardShell><OrdersPage /></DashboardShell></RequireAuth>} />
-
+            
             {/* Customer authenticated routes */}
             <Route path="/checkout" element={<RequireAuth><ShopLayout><CheckoutPage /></ShopLayout></RequireAuth>} />
             <Route path="/orders/:id" element={<RequireAuth><ShopLayout><OrderDetailPage /></ShopLayout></RequireAuth>} />
             <Route path="/receipt/:id" element={<RequireAuth><ShopLayout><ReceiptPage /></ShopLayout></RequireAuth>} />
-
+            <Route
+              path="/paystack-success"
+              element={<PaystackSuccess />}
+            />
+            
             {/* Public routes */}
             <Route path="/" element={<ShopLayout><HomePage /></ShopLayout>} />
             <Route path="/products" element={<ShopLayout><ProductsPage /></ShopLayout>} />

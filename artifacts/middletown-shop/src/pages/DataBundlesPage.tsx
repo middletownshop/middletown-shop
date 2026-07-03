@@ -1,3 +1,8 @@
+import { data, useNavigate } from "react-router-dom";
+import {
+  getBundlePrice,
+  hasAgentPricing,
+} from "@/lib/bundlePricing";
 import { useState, useEffect } from "react";
 import {
   collection,
@@ -73,12 +78,14 @@ const NETWORK_CONFIG: Record<
 
 function PhoneModal({
   bundle,
+  profile,
   balance,
   onConfirm,
   onClose,
   loading,
 }: {
   bundle: any;
+  profile: any;
   balance: number;
 
   onConfirm: (
@@ -102,15 +109,33 @@ function PhoneModal({
 
   const isValid = /^0\d{9}$/.test(phone);
 
+  const bundlePrice = getBundlePrice(
+    bundle,
+    profile
+  );
+
   const hasDiscount =
     bundle.discount &&
     bundle.discount > 0;
 
   const finalPrice = hasDiscount
-    ? bundle.price -
-      bundle.price * (bundle.discount / 100)
-    : bundle.price;
+    ? bundlePrice -
+      bundlePrice * (bundle.discount / 100)
+    : bundlePrice;
 
+  // Paystack fee
+  const percentageFee = 0.0195;
+  const fixedFee = 0.1;
+
+  const totalToPay =
+    Math.ceil(
+      ((finalPrice + fixedFee) /
+        (1 - percentageFee)) *
+        100
+    ) / 100;
+
+  const paystackFee =
+    totalToPay - finalPrice;
   const canUseWallet =
     balance >= finalPrice;
 
@@ -177,7 +202,7 @@ function PhoneModal({
             )}
           </div>
 
-          {/* Bundle Preview */}
+        {/* Bundle Preview */}
           <div
             className="rounded-2xl border p-4"
             style={{
@@ -186,6 +211,7 @@ function PhoneModal({
             }}
           >
             <div className="flex items-center justify-between">
+              {/* Left */}
               <div>
                 <Badge
                   className="mb-2 border-0"
@@ -198,7 +224,7 @@ function PhoneModal({
                 </Badge>
 
                 <h2 className="text-3xl font-black text-black">
-                  {bundle.size}
+                  {bundle.data}
                 </h2>
 
                 <p className="flex items-center gap-1 text-sm text-gray-500 mt-2">
@@ -207,34 +233,46 @@ function PhoneModal({
                 </p>
               </div>
 
+              {/* Right */}
               <div className="text-right">
                 {hasDiscount ? (
                   <>
                     <p className="text-3xl font-black text-black">
-                      GHS{" "}
-                      {finalPrice.toFixed(2)}
+                      GHS {finalPrice.toFixed(2)}
                     </p>
 
                     <p className="text-sm line-through text-gray-400">
-                      GHS{" "}
-                      {bundle.price.toFixed(2)}
+                      GHS {bundlePrice.toFixed(2)}
                     </p>
                   </>
                 ) : (
                   <p className="text-3xl font-black text-black">
-                    GHS{" "}
-                    {bundle.price.toFixed(2)}
+                    GHS {bundlePrice.toFixed(2)}
                   </p>
                 )}
 
                 <p className="text-xs text-gray-500 mt-1">
-                  Wallet: GHS{" "}
-                  {balance.toFixed(2)}
+                  Wallet: GHS {balance.toFixed(2)}
                 </p>
+
+                {paymentMethod === "paystack" && (
+                  <>
+                    <p className="text-xs text-orange-600 mt-1">
+                       Paystack Processing Fee: GHS {(paystackFee || 0).toFixed(2)}
+                    </p>
+
+                    <p className="text-sm font-bold text-green-600">
+                      Total: GHS {(totalToPay || 0).toFixed(2)}
+                    </p>
+                  </>
+                )}
+          
               </div>
             </div>
-          </div>
 
+            
+          </div>
+          
           {/* Payment Methods */}
           <div className="space-y-2">
             <Label className="text-black">
@@ -318,7 +356,7 @@ function PhoneModal({
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="0241234567"
+                  placeholder="0257869403"
                   value={phone}
                   disabled={loading}
                   onChange={(e) =>
@@ -390,7 +428,13 @@ function PhoneModal({
 }
 
 export default function Shop() {
-  const { user, userProfile: profile } = useAuth();
+  const {
+    user,
+    userProfile: profile,
+    refreshProfile,
+  } = useAuth();
+
+  const navigate = useNavigate();
 
   const { toast } = useToast();
 
@@ -416,7 +460,7 @@ export default function Shop() {
   useEffect(() => {
     const q = query(
       collection(db, "bundles"),
-      where("active", "==", true)
+      where("enabled", "==", true)
     );
 
     const unsubscribe = onSnapshot(
@@ -429,12 +473,24 @@ export default function Shop() {
           })
         );
 
-        data.sort(
-          (a: any, b: any) =>
-            (a.price || 0) -
-            (b.price || 0)
-        );
+        data.sort((a: any, b: any) => {
+          const getOrder = (network: string) => {
+            if (network === "MTN") return 1;
+            if (network === "Telecel") return 2;
+            if (network === "AirtelTigo") return 3;
+            return 99;
+          };
 
+          const networkCompare =
+            getOrder(a.network) -
+            getOrder(b.network);
+
+          if (networkCompare !== 0) {
+            return networkCompare;
+          }
+
+          return (a.price || 0) - (b.price || 0);
+        });
         setBundles(data);
 
         setLoading(false);
@@ -447,154 +503,318 @@ export default function Shop() {
 
   const handleBuy = async (
     phone: string,
-    paymentMethod:
-      | "wallet"
-      | "paystack"
+    paymentMethod: "wallet" | "paystack"
   ) => {
     if (!selectedBundle) return;
+
+    const bundlePrice = getBundlePrice(
+      selectedBundle,
+      profile
+    );
 
     const finalPrice =
       selectedBundle.discount &&
       selectedBundle.discount > 0
-        ? selectedBundle.price -
-          selectedBundle.price *
-            (selectedBundle.discount /
-              100)
-        : selectedBundle.price;
+        ? bundlePrice -
+          bundlePrice *
+            (selectedBundle.discount / 100)
+        : bundlePrice;
+
+    console.log("PAYMENT METHOD:", paymentMethod);
+    console.log("FINAL PRICE:", finalPrice);
+    console.log("PROFILE:", profile);
+    console.log("WALLET BALANCE:", profile?.walletBalance);
 
     // PAYSTACK
     if (paymentMethod === "paystack") {
-      toast({
-        title:
-          "Redirecting to Paystack...",
-        description:
-          "Complete your payment securely",
-      });
+      try {
+        console.log("STEP 1: Paystack button clicked");
 
-      console.log({
-        amount: finalPrice,
-        phone,
-        bundle: selectedBundle,
-      });
+        setBuying(true);
 
+        console.log("STEP 2: Sending request");
+        
+        console.log("CALLBACK URL:", `${window.location.origin}/paystack-success`);
+        console.time("PAYSTACK_INIT");
+        const response = await fetch(
+          "https://paystack-api-dspq.onrender.com/api/paystack/initialize",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email:
+                profile?.email ||
+                user?.email ||
+                `${user?.uid}@middletown.com`,
+              amount: finalPrice,
+              callback_url:
+                `${window.location.origin}/paystack-success`,
+              metadata: {
+                uid: user?.uid,
+                phone,
+                bundleId: selectedBundle.id,
+              },
+            }),
+          }
+        );
+
+        console.timeEnd("PAYSTACK_INIT");
+        
+        console.log("STEP 3: Response received", response.status);
+
+        const data = await response.json();
+
+        console.log("STEP 4: Data", data);
+        localStorage.setItem(
+          "pendingBundlePurchase",
+          JSON.stringify({
+            uid: user?.uid,
+            name: profile?.displayName,
+            email: profile?.email,
+
+            phone,
+
+            amount: finalPrice,
+
+            bundle: {
+              id: selectedBundle.id,
+              network: selectedBundle.network,
+              data: selectedBundle.data,
+              validity: selectedBundle.validity,
+              price: selectedBundle.price,
+            },
+          })
+        );
+        const debugPurchase = {
+          uid: user?.uid,
+          name: profile?.displayName,
+          email: profile?.email,
+
+          phone,
+
+          amount: finalPrice,
+
+          bundle: {
+            id: selectedBundle.id,
+            network: selectedBundle.network,
+            data: selectedBundle.data,
+            validity: selectedBundle.validity,
+            price: selectedBundle.price,
+          },
+        };
+
+        console.log("SAVING PURCHASE:", debugPurchase);
+        
+        console.log(
+          "AFTER SAVE:",
+          localStorage.getItem("pendingBundlePurchase")
+        );
+
+        console.log(
+          "ORIGIN BEFORE PAYMENT:",
+          window.location.origin
+        );
+        window.location.href =
+          data.data.authorization_url;
+
+        return; // STOP HERE
+
+      } catch (error) {
+        console.error("PAYSTACK ERROR", error);
+      } finally {
+        setBuying(false);
+      }
+    }
+    // WALLET
+    console.log("=== WALLET FLOW STARTED ===");
+    console.log("User:", user?.uid);
+    console.log("Profile:", profile);
+    console.log("Wallet Balance:", profile?.walletBalance);
+    console.log("Final Price:", finalPrice);
+
+    if (!user || !profile) {
+      console.log("Missing user or profile");
       return;
     }
 
-    // WALLET
-    if (!user || !profile) return;
-
-    const balance =
-      profile.walletBalance ?? 0;
+    const balance = profile.walletBalance ?? 0;
+    
+    console.log("ROLE:", profile.role);
+    console.log("BALANCE:", balance);
+    console.log("PRICE:", finalPrice);
 
     if (balance < finalPrice) {
+      console.log("Insufficient balance");
       toast({
         variant: "destructive",
         title: "Insufficient Balance",
       });
-
       return;
     }
 
     setBuying(true);
 
     try {
-      await runTransaction(
-        db,
-        async (tx) => {
-          const userRef = doc(
-            db,
-            "users",
-            user.uid
-          );
+      console.log("Starting Firestore transaction...");
 
-          const userDoc =
-            await tx.get(userRef);
+      await runTransaction(db, async (tx) => {
+        const userRef = doc(
+          db,
+          "users",
+          user.uid
+        );
 
-          if (!userDoc.exists()) {
-            throw new Error(
-              "User not found"
-            );
-          }
+        console.log("Reading user document:", user.uid);
 
-          const currentBalance =
-            userDoc.data()
-              .walletBalance || 0;
+        const userDoc = await tx.get(userRef);
 
-          if (
-            currentBalance < finalPrice
-          ) {
-            throw new Error(
-              "Insufficient balance"
-            );
-          }
-
-          tx.update(userRef, {
-            walletBalance:
-              currentBalance -
-              finalPrice,
-          });
+        if (!userDoc.exists()) {
+          throw new Error("User not found");
         }
-      );
 
-      await addDoc(
+        const currentBalance =
+          userDoc.data().walletBalance || 0;
+
+        console.log(
+          "Current Firestore Balance:",
+          currentBalance
+        );
+
+        if (currentBalance < finalPrice) {
+          throw new Error(
+            "Insufficient balance"
+          );
+        }
+
+        tx.update(userRef, {
+          walletBalance:
+            currentBalance - finalPrice,
+        });
+
+        console.log(
+          "New Balance:",
+          currentBalance - finalPrice
+        );
+      });
+
+      console.log("Transaction completed successfully");
+
+      console.log("Creating order...");
+
+      const orderRef = await addDoc(
         collection(db, "orders"),
         {
           uid: user.uid,
-          userName: profile.displayName,
+          userName:
+            profile.displayName ||
+            "Customer",
 
           bundleId: selectedBundle.id,
+          network: selectedBundle.network,
+          size: selectedBundle.data,
+          validity: selectedBundle.validity,
 
-          network:
-            selectedBundle.network,
-
-          size: selectedBundle.size,
-
-          validity:
-            selectedBundle.validity,
-
-          originalPrice:
-            selectedBundle.price,
-
-          discount:
-            selectedBundle.discount || 0,
-
+          originalPrice: selectedBundle.price,
+          discount: selectedBundle.discount || 0,
           amountPaid: finalPrice,
 
           recipientPhone: phone,
+          flashSale: selectedBundle.flashSale || false,
 
-          flashSale:
-            selectedBundle.flashSale ||
-            false,
-
-          paymentMethod:
-            paymentMethod,
-
+          paymentMethod,
           status: "completed",
 
-          timestamp:
+          timestamp: serverTimestamp(),
+        }
+      );
+      
+      console.log("Order created:", orderRef.id);
+      
+      console.log("About to create receipt...");
+      
+      const receiptRef = await addDoc(
+        collection(db, "receipts"),
+        {
+          orderId: orderRef.id,
+
+          receiptNumber:
+            "RCT-" + Date.now(),
+
+          customerId: user.uid,
+          userName:
+          profile.displayName ||
+          "Customer",
+
+          customerEmail:
+            profile.email || "",
+
+          paymentReference:
+            orderRef.id,
+
+          totalAmount:
+            finalPrice,
+
+          paidAt:
+            new Date().toISOString(),
+
+          items: [
+            {
+              name:
+                `${selectedBundle.network} ${selectedBundle.data}`,
+              quantity: 1,
+              price: finalPrice,
+            },
+          ],
+
+          createdAt:
             serverTimestamp(),
         }
       );
+      console.log("Receipt created:", receiptRef.id);
+      console.log("Order created:", orderRef.id);
+      
+      // Refresh the wallet/profile after deduction
+      await refreshProfile();
+      console.log(
+        "Navigating to:",
+        `/receipt/${receiptRef.id}`
+      );
 
+      navigate(`/receipt/${receiptRef.id}`);
+      await refreshProfile();
+
+      setTimeout(() => {
+        navigate(`/receipt/${receiptRef.id}`);
+      }, 500);
+      
+      toast({
+        title: "Bundle Sent Successfully ⚡",
+        description: `${selectedBundle.network} ${selectedBundle.data} → ${phone}`,
+      });
+
+      setSelectedBundle(null);
       toast({
         title:
           "Bundle Sent Successfully ⚡",
 
-        description: `${selectedBundle.network} ${selectedBundle.size} → ${phone}`,
+        description: `${selectedBundle.network} ${selectedBundle.data} → ${phone}`,
       });
 
       setSelectedBundle(null);
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
+      } catch (error: any) {
+        console.error("FULL ERROR:", error);
+        console.error("ERROR MESSAGE:", error?.message);
+        console.error("ERROR CODE:", error?.code);
 
-        title: "Purchase Failed",
-
-        description:
-          error.message ||
-          "Please try again",
-      });
-    } finally {
+        toast({
+          variant: "destructive",
+          title: "Purchase Failed",
+          description:
+            error?.message || "Please try again",
+        });
+      }finally {
       setBuying(false);
     }
   };
@@ -762,7 +982,7 @@ export default function Shop() {
                       .includes(
                         search.toLowerCase()
                       ) ||
-                    bundle.size
+                    bundle.data
                       ?.toLowerCase()
                       .includes(
                         search.toLowerCase()
@@ -775,18 +995,27 @@ export default function Shop() {
                     ] ||
                     NETWORK_CONFIG["MTN"];
 
+                  const basePrice = getBundlePrice(
+                    bundle,
+                    profile
+                  );
+
+                  const showAgentPrice =
+                    hasAgentPricing(
+                      bundle,
+                      profile
+                    );
+
                   const hasDiscount =
                     bundle.discount &&
-                    bundle.discount >
-                      0;
+                    bundle.discount > 0;
 
                   const discountedPrice =
                     hasDiscount
-                      ? bundle.price -
-                        bundle.price *
-                          (bundle.discount /
-                            100)
-                      : bundle.price;
+                      ? basePrice -
+                        basePrice *
+                          (bundle.discount / 100)
+                      : basePrice;
 
                   return (
                     <div
@@ -860,7 +1089,7 @@ export default function Shop() {
                         {/* Size */}
                         <div className="space-y-1 mb-3">
                           <h2 className="text-3xl font-black leading-none text-black">
-                            {bundle.size}
+                            {bundle.data}
                           </h2>
 
                           <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -884,17 +1113,15 @@ export default function Shop() {
                                 </span>
 
                                 <span className="text-sm line-through text-gray-400">
-                                  {
-                                    bundle.price
-                                  }
+                                  GHS {basePrice.toFixed(2)}
                                 </span>
                               </div>
 
                               <p className="text-[11px] text-green-600 font-bold">
                                 Save GHS{" "}
                                 {(
-                                  bundle.price -
-                                  discountedPrice
+                                 basePrice -
+                                 discountedPrice
                                 ).toFixed(
                                   2
                                 )}
@@ -903,9 +1130,7 @@ export default function Shop() {
                           ) : (
                             <span className="text-3xl font-black text-black">
                               GHS{" "}
-                              {bundle.price?.toFixed(
-                                2
-                              )}
+                              {basePrice.toFixed(2)}
                             </span>
                           )}
                         </div>
@@ -948,19 +1173,20 @@ export default function Shop() {
 
       {/* Modal */}
       {selectedBundle && (
-        <PhoneModal
-          bundle={selectedBundle}
-          balance={
-            profile?.walletBalance ??
-            0
-          }
-          onConfirm={handleBuy}
-          onClose={() =>
-            !buying &&
-            setSelectedBundle(null)
-          }
-          loading={buying}
-        />
+       <PhoneModal
+         bundle={selectedBundle}
+         profile={profile}
+         balance={
+           profile?.walletBalance ??
+           0
+         }
+         onConfirm={handleBuy}
+         onClose={() =>
+           !buying &&
+           setSelectedBundle(null)
+         }
+         loading={buying}
+       />
       )}
     </>
   );
