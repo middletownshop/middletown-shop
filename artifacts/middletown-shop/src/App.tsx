@@ -38,6 +38,7 @@ import AdminBundles from "@/pages/admin/AdminBundles";
 import AdminComplaints from "@/pages/admin/AdminComplaints";
 import AdminWithdrawals from "@/pages/admin/AdminWithdrawals";
 import AdminNotices from "@/pages/admin/AdminNotices";
+import DeliverySettings from "@/pages/admin/DeliverySettings";
 
 function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -111,6 +112,15 @@ export default function App() {
                 <RequireAdmin>
                   <AdminLayout>
                     <AdminNotices />
+                  </AdminLayout>
+                </RequireAdmin>
+              }
+            /><Route
+              path="/admin/delivery-settings"
+              element={
+                <RequireAdmin>
+                  <AdminLayout>
+                    <DeliverySettings />
                   </AdminLayout>
                 </RequireAdmin>
               }

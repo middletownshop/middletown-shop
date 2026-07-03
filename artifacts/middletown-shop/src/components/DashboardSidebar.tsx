@@ -1,8 +1,18 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard, Wallet, Signal, Package, Receipt, User,
-  Handshake, TrendingUp, MessageSquare, Menu, X,
+  LayoutDashboard,
+  Wallet,
+  Signal,
+  Package,
+  Receipt,
+  User,
+  Handshake,
+  TrendingUp,
+  MessageSquare,
+  Menu,
+  X,
+  MapPin,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -21,14 +31,30 @@ const agentOnlyLinks = [
   { to: "/agent/complaints", label: "Agent Complaints", icon: <MessageSquare className="w-4 h-4" /> },
 ];
 
+const adminOnlyLinks = [
+  {
+    to: "/admin/delivery-settings",
+    label: "Delivery Settings",
+    icon: <MapPin className="w-4 h-4" />,
+  },
+];
+
 const becomeAgentLink = { to: "/agent/apply", label: "Become an Agent", icon: <Handshake className="w-4 h-4" /> };
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   const { userProfile } = useAuth();
-  const isAgent = userProfile?.role === "agent" || userProfile?.role === "admin";
+  const isAgent =
+    userProfile?.role === "agent" ||
+    userProfile?.role === "admin";
 
-  const allLinks = [...userLinks, ...(isAgent ? agentOnlyLinks : [becomeAgentLink])];
+  const isAdmin =
+    userProfile?.role === "admin";
 
+  const allLinks = [
+    ...userLinks,
+    ...(isAgent ? agentOnlyLinks : [becomeAgentLink]),
+    ...(isAdmin ? adminOnlyLinks : []),
+  ];
   return (
     <div className="flex flex-col h-full bg-white">
       <div className="flex items-center justify-between p-4 border-b border-border">

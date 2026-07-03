@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { Shield, CreditCard } from "lucide-react";
 import { doc, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { getDeliverySettings } from "@/lib/firestore";
 
 interface ShippingForm {
   name: string;
@@ -50,14 +51,16 @@ export default function CheckoutPage() {
   });
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"paystack" | "wallet">("paystack");
+  const [deliverySettings, setDeliverySettings] = useState<any>(null);
+
   
   const update = (field: keyof ShippingForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }));
 
   const deliveryFees = {
-    "Accra": 35,
-    "Tema": 60,
-    "Outside Accra": 80,
+    Accra: Number(deliverySettings?.accraFee || 35),
+    Tema: Number(deliverySettings?.temaFee || 60),
+    "Outside Accra": Number(deliverySettings?.outsideAccraFee || 80),
   };
 
   const deliveryFee =
@@ -68,6 +71,19 @@ export default function CheckoutPage() {
 
   
   const finalTotal = cartTotal + deliveryFee;
+
+  useEffect(() => {
+    async function loadSettings() {
+      try {
+        const settings = await getDeliverySettings();
+        setDeliverySettings(settings);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    loadSettings();
+  }, []);
   
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,6 +399,7 @@ export default function CheckoutPage() {
                   />
                   Pickup
                 </label>
+               
               </div>
             </div>
 
@@ -392,6 +409,59 @@ export default function CheckoutPage() {
               </span>
               Shipping Information
             </h2>
+
+            {form.deliveryType === "pickup" && (
+              <div className="mb-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
+
+                <h3 className="font-semibold text-blue-900">
+                  Pickup Information
+                </h3>
+
+                <p className="mt-2 text-sm text-blue-800">
+                  Your order will be prepared for pickup after payment confirmation.
+                </p>
+
+                <div className="mt-4 space-y-2 text-sm">
+
+                  <p>
+                    <strong>Pickup Location:</strong><br />
+                    {deliverySettings?.pickupAddress || "Accra, Circle"}
+                  </p>
+
+                  <p>
+                    <strong>Working Hours:</strong><br />
+                    {deliverySettings?.workingHours || "Monday - Saturday, 8:00 AM - 6:00 PM"}
+                  </p>
+
+                  <p className="text-green-700 font-medium">
+                    We will send you a notification when your order is ready for collection.
+                  </p>
+
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  <p>
+                    <strong>Call:</strong>{"0257869403,0247867296 "}
+                    <a href={`tel:${deliverySettings?.phoneNumber}`} className="text-blue-600">
+                      {deliverySettings?.phoneNumber}
+                    </a>
+                  </p>
+
+                  <p>
+                    <strong>WhatsApp:</strong>{"233507707947 "}
+                    <a
+                      href={`https://wa.me/${deliverySettings?.whatsappNumber}`}
+                      target="_blank"
+                      className="text-green-600"
+                    >
+                      Chat on WhatsApp
+                    </a>
+                  </p>
+                </div>
+                
+              </div>
+            )}
+            
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-foreground mb-1">Full Name *</label>
@@ -403,7 +473,7 @@ export default function CheckoutPage() {
                 <input value={form.phone} onChange={update("phone")} required placeholder="0257869403" data-testid="input-shipping-phone"
                   className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
               </div>
-              {form.deliveryType === "delivery" && (
+               {form.deliveryType === "delivery" && (
                 <>
                   {/* Delivery Fee */}
                   {form.deliveryType === "delivery" && (
@@ -426,7 +496,6 @@ export default function CheckoutPage() {
                             })
                           }
                         />
-
                         <div>
                           <p className="font-semibold">
                             Store Delivery Fee
@@ -451,7 +520,7 @@ export default function CheckoutPage() {
                             })
                           }
                         />
-
+                        
                         <div>
                           <p className="font-semibold">
                             Agree With Dispatch Rider
@@ -459,6 +528,40 @@ export default function CheckoutPage() {
 
                           <p className="text-sm text-gray-500">
                             Pay for your items now and agree on the delivery fee directly with the dispatch rider.
+                            <div className="sm:col-span-2 rounded-xl border border-green-200 bg-green-50 p-4">
+                              <h3 className="font-semibold text-green-800">
+                                Delivery Information
+                              </h3>
+
+                              <p className="mt-2 text-sm text-green-700">
+                                Estimated delivery time:
+                              </p>
+
+                              <p className="font-medium text-green-900 mt-1">
+                                {deliverySettings?.deliveryDuration || "1 - 3 Business Days"}
+                              </p>
+
+                              <div className="mt-3 space-y-2">
+                                <p>
+                                  <strong>Call Store:</strong>{"0257869403,0247867296 "}
+                                  <a href={`tel:${deliverySettings?.phoneNumber}`} className="text-blue-600">
+                                    {deliverySettings?.phoneNumber}
+                                  </a>
+                                </p>
+
+                                <p>
+                                  <strong>WhatsApp Support:</strong>{"233507707947 "}
+                                  <a
+                                    href={`https://wa.me/${deliverySettings?.whatsappNumber}`}
+                                    target="_blank"
+                                    className="text-green-600"
+                                  >
+                                    Message us
+                                  </a>
+                                </p>
+                              </div>
+                              
+                            </div>
                           </p>
                         </div>
                       </label>
@@ -597,24 +700,32 @@ export default function CheckoutPage() {
                     </div>
                 )}
 
-                {form.deliveryPayment === "store" && (
-                  <div>
-                    <label className="block text-sm font-medium mb-2">
-                      Delivery Area
-                    </label>
+                {form.deliveryType === "delivery" &&
+                  form.deliveryPayment === "store" && (
+                    <div>
+                      <label className="block text-sm font-medium mb-2">
+                        Delivery Area
+                      </label>
 
-                    <select
-                      value={form.deliveryArea}
-                      onChange={update("deliveryArea")}
-                      className="w-full border rounded-lg px-3 py-2"
-                    >
-                      <option value="Accra">Accra</option>
-                      <option value="Tema">Tema</option>
-                      <option value="Outside Accra">Outside Accra</option>
-                    </select>
-                  </div>
+                      <select
+                        value={form.deliveryArea}
+                        onChange={update("deliveryArea")}
+                        className="w-full border rounded-lg px-3 py-2"
+                      >
+                        <option value="Accra">
+                          Accra (₵{deliveryFees.Accra})
+                        </option>
+
+                        <option value="Tema">
+                          Tema (₵{deliveryFees.Tema})
+                        </option>
+
+                        <option value="Outside Accra">
+                          Outside Accra (₵{deliveryFees["Outside Accra"]})
+                        </option>
+                      </select>
+                    </div>
                 )}
-                
                 <div className="flex justify-between font-bold text-lg mt-3 border-t pt-2">
                   <span>Total</span>
                   <span>₵{finalTotal.toLocaleString("en-GH")}</span>

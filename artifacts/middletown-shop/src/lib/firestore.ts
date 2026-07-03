@@ -9,6 +9,16 @@ import type {
   DataBundle, NetworkProvider, Complaint, ComplaintReply,
 } from "./types";
 
+export async function getDeliverySettings() {
+  const snap = await getDoc(doc(db, "settings", "delivery"));
+
+  if (!snap.exists()) {
+    throw new Error("Delivery settings not found");
+  }
+
+  return snap.data();
+}
+
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 export async function createUserProfile(uid: string, data: Partial<UserProfile>) {
