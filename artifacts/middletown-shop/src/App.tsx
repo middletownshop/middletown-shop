@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
 import PaystackSuccess from "./pages/PaystackSuccess";
 import NotificationsPage from "@/pages/NotificationsPage";
+import SpinWinPage from "@/pages/SpinWinPage";
 
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
@@ -162,7 +163,17 @@ export default function App() {
             <Route path="/cart" element={<ShopLayout><CartPage /></ShopLayout>} />
             <Route path="/bundles" element={<ShopLayout><DataBundlesPage /></ShopLayout>} />
             <Route path="/track/:orderId" element={<ShopLayout><TrackOrderPage /></ShopLayout>} />
-
+            <Route
+              path="/spin-win"
+              element={
+                <RequireAuth>
+                  <ShopLayout>
+                    <SpinWinPage />
+                  </ShopLayout>
+                </RequireAuth>
+              }
+            />
+            
             {/* 404 */}
             <Route path="*" element={<ShopLayout><NotFoundPage /></ShopLayout>} />
           </Routes>

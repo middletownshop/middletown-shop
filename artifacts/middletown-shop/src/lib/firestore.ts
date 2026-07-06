@@ -8,6 +8,7 @@ import type {
   BundleOrder, WalletTransaction, WithdrawalRequest, AgentApplication, AgentCommission,
   DataBundle, NetworkProvider, Complaint, ComplaintReply,
 } from "./types";
+import { WheelPrize } from "@/types/game";
 
 export async function getDeliverySettings() {
   const snap = await getDoc(doc(db, "settings", "delivery"));
@@ -23,9 +24,26 @@ export async function getDeliverySettings() {
 
 export async function createUserProfile(uid: string, data: Partial<UserProfile>) {
   await setDoc(doc(db, "users", uid), {
-    uid, email: data.email || "", displayName: data.displayName || "",
-    photoURL: data.photoURL || "", role: "customer", walletBalance: 0,
-    savedProducts: [], createdAt: serverTimestamp(), ...data,
+    uid,
+    email: data.email || "",
+    displayName: data.displayName || "",
+    photoURL: data.photoURL || "",
+
+    role: "customer",
+
+    walletBalance: 0,
+
+    rewardPoints: 0,
+
+    availableSpins: 1,
+
+    lastSpin: null,
+
+    savedProducts: [],
+
+    createdAt: serverTimestamp(),
+
+    ...data,
   });
 }
 
@@ -475,4 +493,114 @@ export async function resolveComplaint(id: string): Promise<void> {
 
 export async function deleteComplaint(id: string): Promise<void> {
   await deleteDoc(doc(db, "complaints", id));
+}
+
+export async function saveSpinResult(
+  uid: string,
+  prize: WheelPrize
+) {
+  // 1. Save the time of the spin
+  await updateDoc(doc(db, "users", uid), {
+    lastSpin: serverTimestamp(),
+  });
+
+  // 2. Save spin history
+  await addDoc(collection(db, "users", uid, "spinHistory"), {
+    prize: prize.title,
+    type: prize.type,
+    value: prize.value,
+    createdAt: serverTimestamp(),
+  });
+
+  // 3. Give the reward
+  switch (prize.type) {
+    case "wallet":
+      await updateDoc(doc(db, "users", uid), {
+        walletBalance: increment(prize.value),
+      });
+      break;
+
+    case "points":
+      await updateDoc(doc(db, "users", uid), {
+        rewardPoints: increment(prize.value),
+      });
+      break;
+
+    case "data":
+      // We'll implement data bundle rewards in the next step.
+      break;
+
+    case "coupon":
+      // Coupon system comes later.
+      break;
+
+    case "lose":
+      // Nothing to award.
+      break;
+  }
+  // Save winner globally (ignore losing spins)
+  if (prize.type !== "lose") {
+    const profile = await getUserProfile(uid);
+
+    await addDoc(collection(db, "spinWinners"), {
+      uid,
+      name: profile?.displayName || "Anonymous",
+      prize: prize.title,
+      type: prize.type,
+      createdAt: serverTimestamp(),
+    });
+  }
+}
+export async function getLatestSpinWinners() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const q = query(
+    collection(db, "spinWinners"),
+    where("createdAt", ">=", today),
+    orderBy("createdAt", "desc"),
+    limit(10)
+  );
+
+  const snap = await getDocs(q);
+
+  return snap.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+}
+export async function useAvailableSpin(uid: string) {
+  const userRef = doc(db, "users", uid);
+
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+
+  const current = data.availableSpins ?? 1;
+
+  if (current <= 0) return;
+
+  await updateDoc(userRef, {
+    availableSpins: current - 1,
+  });
+}
+export async function addAvailableSpins(
+  uid: string,
+  amount: number = 1
+) {
+  const userRef = doc(db, "users", uid);
+
+  const snap = await getDoc(userRef);
+
+  if (!snap.exists()) return;
+
+  const data = snap.data();
+
+  const current = data.availableSpins ?? 0;
+
+  await updateDoc(userRef, {
+    availableSpins: current + amount,
+  });
 }

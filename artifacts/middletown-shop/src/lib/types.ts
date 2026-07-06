@@ -6,9 +6,19 @@ export interface UserProfile {
   displayName: string;
   photoURL: string;
   role: "admin" | "customer" | "agent";
+
   createdAt: Timestamp;
+
   walletBalance: number;
+
+  rewardPoints: number;
+
+  availableSpins: number;
+
   savedProducts: string[];
+
+  lastSpin?: Timestamp;
+  
   agentCode?: string;
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import {
+  Home,
   LayoutDashboard,
   Wallet,
   Signal,
@@ -17,7 +18,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 
 const userLinks = [
-  { to: "/dashboard", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" />, end: true },
+  { to: "/", label: "Home", icon: <Home className="w-4 h-4" />, end: true },
+  { to: "/dashboard", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
   { to: "/wallet", label: "Wallet", icon: <Wallet className="w-4 h-4" /> },
   { to: "/bundles", label: "Data Bundles", icon: <Signal className="w-4 h-4" /> },
   { to: "/orders", label: "My Orders", icon: <Package className="w-4 h-4" /> },

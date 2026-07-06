@@ -8,10 +8,21 @@ interface UserProfile {
   email: string;
   displayName: string;
   photoURL: string;
-  role: 'admin' | 'customer' | 'agent';
+  role: "admin" | "customer" | "agent";
   createdAt: any;
+
   walletBalance: number;
+
+  rewardPoints: number;   // NEW
+
+  availableSpins: number;
+
   savedProducts: string[];
+
+  lastSpin?: any;         // NEW
+
+  spinsToday?: number;    // NEW
+
   agentCode?: string;
 }
 
@@ -45,7 +56,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const userDocRef = doc(db, 'users', firebaseUser.uid);
       const userDocSnap = await getDoc(userDocRef);
       if (userDocSnap.exists()) {
-        setUserProfile(userDocSnap.data() as UserProfile);
+        const profile = userDocSnap.data();
+
+        setUserProfile({
+          ...profile,
+
+          walletBalance: profile.walletBalance ?? 0,
+
+          rewardPoints: profile.rewardPoints ?? 0,
+
+          availableSpins: profile.availableSpins ?? 1,
+        } as UserProfile);
       } else {
         setUserProfile(null);
       }

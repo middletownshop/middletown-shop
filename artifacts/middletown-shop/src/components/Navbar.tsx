@@ -112,7 +112,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center gap-3">
         <Link to="/" className="flex-shrink-0 flex items-center gap-2">
           <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-            <span className="text-white font-bold text-sm">M</span>
+             <span className="text-white font-bold text-sm">MT</span>
           </div>
           <span className="font-bold text-xl text-primary hidden sm:block">Middletown Shop</span>
         </Link>
@@ -266,6 +266,13 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden border-t border-border bg-white py-2 px-4 flex flex-col gap-1">
+          <Link
+            to="/"
+            onClick={() => setMenuOpen(false)}
+            className="py-2 text-sm font-medium"
+          >
+            Home
+          </Link>
           {CATEGORIES.map(cat => (
             <Link key={cat.href} to={cat.href} onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">
               {cat.label}
@@ -273,10 +280,71 @@ export default function Navbar() {
           ))}
           {user && (
             <>
-              <div className="border-t border-border my-1" />
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)} className="py-2 text-sm font-medium">Dashboard</Link>
-              <Link to="/wallet" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">Wallet</Link>
-              <Link to="/complaints" onClick={() => setMenuOpen(false)} className="py-2 text-sm text-muted-foreground">Complaints</Link>
+              <div className="border-t border-border my-2" />
+
+              <Link
+                to="/dashboard"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm font-medium"
+              >
+                Dashboard
+              </Link>
+
+              <Link
+                to="/wallet"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                Wallet
+              </Link>
+
+              <Link
+                to="/bundles"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                Data Bundles
+              </Link>
+
+              <Link
+                to="/orders"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                My Orders
+              </Link>
+
+              <Link
+                to="/bundle-orders"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                Bundle Orders
+              </Link>
+
+              <Link
+                to="/complaints"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                Complaints
+              </Link>
+
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                Profile
+              </Link>
+
+              <Link
+                to="/agent/apply"
+                onClick={() => setMenuOpen(false)}
+                className="py-2 text-sm text-muted-foreground"
+              >
+                Become an Agent
+              </Link>
             </>
           )}
         </div>

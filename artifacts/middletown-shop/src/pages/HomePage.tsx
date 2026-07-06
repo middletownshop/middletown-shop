@@ -4,6 +4,7 @@ import { Search, ChevronRight, Zap, Shield, Truck, Star } from "lucide-react";
 import { getFeaturedProducts } from "@/lib/firestore";
 import type { Product } from "@/lib/types";
 import ProductCard from "@/components/ProductCard";
+import { Gift, Trophy, Sparkles } from "lucide-react";
 
 const CATEGORIES = [
   {
@@ -159,6 +160,105 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Play & Win Rewards */}
+      <section className="max-w-7xl mx-auto px-4 pb-10">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              🎮 Games & Win Rewards
+            </h2>
+
+            <p className="text-muted-foreground mt-1">
+              Play games every day and win amazing rewards.
+            </p>
+          </div>
+
+          <Link
+            to="/games"
+            className="text-primary font-semibold hover:underline"
+          >
+            View All
+          </Link>
+        </div>
+
+        <div className="grid md:grid-cols-4 gap-6">
+
+          {/* Spin & Win */}
+          <Link
+            to="/spin-win"
+            className="group rounded-2xl overflow-hidden bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 text-white shadow-xl hover:scale-105 transition-all duration-300"
+          >
+            <div className="p-6">
+
+              <div className="text-6xl mb-4 text-center">
+                🎡
+              </div>
+
+              <h3 className="text-xl font-bold text-center">
+                Spin & Win
+              </h3>
+
+              <p className="text-sm text-center mt-2 opacity-90">
+                One free spin every day.
+              </p>
+
+              <div className="mt-5 flex justify-center">
+                <span className="bg-white text-orange-600 font-bold px-5 py-2 rounded-full">
+                  PLAY NOW
+                </span>
+              </div>
+
+            </div>
+          </Link>
+
+          {/* Trivia */}
+          <div className="rounded-2xl border bg-card p-6 flex flex-col items-center justify-center opacity-80">
+            <div className="text-5xl mb-3">
+              🧠
+            </div>
+
+            <h3 className="font-bold text-lg">
+              Trivia Quiz
+            </h3>
+
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Coming Soon
+            </p>
+          </div>
+
+          {/* Ludo */}
+          <div className="rounded-2xl border bg-card p-6 flex flex-col items-center justify-center opacity-80">
+            <div className="text-5xl mb-3">
+              🎲
+            </div>
+
+            <h3 className="font-bold text-lg">
+              Ludo
+            </h3>
+
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Coming Soon
+            </p>
+          </div>
+
+          {/* Puzzle */}
+          <div className="rounded-2xl border bg-card p-6 flex flex-col items-center justify-center opacity-80">
+            <div className="text-5xl mb-3">
+              🧩
+            </div>
+
+            <h3 className="font-bold text-lg">
+              Puzzle
+            </h3>
+
+            <p className="text-sm text-muted-foreground mt-2 text-center">
+              Coming Soon
+            </p>
+          </div>
+
+        </div>
+      </section>
+      
       {/* Featured Products */}
       <section className="max-w-7xl mx-auto px-4 pb-10">
         <div className="flex items-center justify-between mb-6">
