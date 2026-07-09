@@ -56,12 +56,14 @@ const CATEGORIES = [
     href: "/products?category=service",
   },
 
+  
   {
     label: "Become Agent",
     icon: "🤝",
     desc: "Earn commissions on sales",
     href: "/agent/apply",
   },
+ 
 ];
 
 const BANNERS = [

@@ -8,6 +8,7 @@ const SEGMENT_ANGLE = 360 / SEGMENTS;
  * Select a prize using weighted probability.
  */
 export function pickPrize(): WheelPrize {
+
   const totalWeight = WHEEL_PRIZES.reduce(
     (sum, prize) => sum + prize.probability,
     0
@@ -18,11 +19,13 @@ export function pickPrize(): WheelPrize {
   let cumulative = 0;
 
   for (const prize of WHEEL_PRIZES) {
+
     cumulative += prize.probability;
 
     if (random <= cumulative) {
       return prize;
     }
+
   }
 
   return WHEEL_PRIZES[0];

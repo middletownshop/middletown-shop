@@ -6,7 +6,7 @@ import { db } from "@/lib/firebase";
 import OrderStatusBadge from "@/components/OrderStatusBadge";
 import {
   Users, Package, DollarSign, Clock, Signal, MessageSquare,
-  ChevronRight, Wallet, ShoppingBag, TrendingUp,
+  ChevronRight, Wallet, ShoppingBag, TrendingUp,  Gift,
 } from "lucide-react";
 
 interface Stats {
@@ -79,8 +79,21 @@ export default function AdminDashboard() {
       desc: "Send announcements to users",
       icon: <MessageSquare className="w-5 h-5 text-blue-600" />
     },
+    {
+      label: "Coupons",
+      href: "/admin/coupons",
+      desc: "Manage Spin & Win coupons",
+      icon: <TrendingUp className="w-5 h-5 text-green-600" />,
+    },
+    {
+      label: "Spin Management",
+      href: "/admin/spin-management",
+      desc: "View spins, winners and game revenue",
+      icon: <Gift className="w-5 h-5 text-orange-600" />,
+    },
   ];
-
+ 
+  
   
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">

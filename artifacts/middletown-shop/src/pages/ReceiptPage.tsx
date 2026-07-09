@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { getReceipt } from "@/lib/firestore";
 import type { Receipt } from "@/lib/types";
 import { Printer, Download, ArrowLeft } from "lucide-react";
@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 
 export default function ReceiptPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -29,6 +30,14 @@ export default function ReceiptPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    if (receipt) {
+      console.log("FULL RECEIPT", receipt);
+      console.log("orderType =", receipt.orderType);
+      console.log("orderId =", receipt.orderId);
+    }
+  }, [receipt]);
+  
   const handleDownload = async () => {
     if (!receiptRef.current) return;
     setDownloading(true);
@@ -57,31 +66,64 @@ export default function ReceiptPage() {
   );
 
   if (!receipt) return (
-    <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-      <h2 className="text-xl font-bold text-foreground mb-2">Receipt not found</h2>
-      <Link to="/orders" className="text-primary hover:underline">Back to orders</Link>
+    <div className="text-center py-20">
+      <h2 className="text-xl font-bold mb-4">
+        Receipt not found
+      </h2>
+
+      <button
+        onClick={() => navigate("/orders")}
+        className="px-4 py-2 border rounded-lg"
+      >
+        Back to orders
+      </button>
     </div>
   );
-
+  
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto p-4">
+
       {/* Action buttons */}
-      <div className="flex items-center justify-between mb-6 print:hidden">
-        <Link to="/orders" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to orders
-        </Link>
-        <div className="flex gap-2">
-          <button onClick={handlePrint} data-testid="button-print"
-            className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-accent transition-colors">
-            <Printer className="w-4 h-4" /> Print
-          </button>
-          <button onClick={handleDownload} disabled={downloading} data-testid="button-download-pdf"
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50">
-            <Download className="w-4 h-4" />
-            {downloading ? "Downloading..." : "Download PDF"}
-          </button>
-        </div>
+      <div className="flex gap-3 mb-6">
+
+        <button
+          onClick={() => {
+            if (
+              receipt.orderType === "bundle" ||
+              receipt.orderId.startsWith("BD-")
+            ) {
+              navigate("/bundle-orders");
+            } else {
+              navigate("/orders");
+            }
+          }}
+          className="flex items-center gap-2 px-4 py-2 border rounded-lg"
+        >
+          <ArrowLeft size={18} />
+          Back to orders
+        </button>
+
+
+        <button
+          onClick={handlePrint}
+          className="flex items-center gap-2 px-4 py-2 border rounded-lg"
+        >
+          <Printer size={18} />
+          Print
+        </button>
+
+
+        <button
+          onClick={handleDownload}
+          disabled={downloading}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg"
+        >
+          <Download size={18} />
+          {downloading ? "Downloading..." : "Download PDF"}
+        </button>
+
       </div>
+
 
       {/* Receipt document */}
       <div
@@ -163,7 +205,7 @@ export default function ReceiptPage() {
         <div className="text-center text-xs text-muted-foreground border-t border-border pt-4">
           <p className="font-medium text-foreground mb-1">Thank you for shopping with Middletown Shop!</p>
           <p>This is an electronically generated receipt and requires no signature.</p>
-          <p className="mt-1">Powered by Paystack — Ghana's trusted payment gateway.</p>
+          <p className="mt-1">Paid securely through Middletown Wallet.</p>
         </div>
       </div>
     </div>

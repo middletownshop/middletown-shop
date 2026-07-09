@@ -185,6 +185,16 @@ export default function WalletPage() {
         <p className="text-4xl font-bold mb-4">
           ₵{balance.toLocaleString("en-GH", { minimumFractionDigits: 2 })}
         </p>
+        <div className="bg-white/10 rounded-xl px-4 py-3 mb-4">
+          <p className="text-blue-100 text-sm">
+            Reward Points
+          </p>
+
+          <p className="text-2xl font-bold">
+            ⭐ {userProfile?.rewardPoints ?? 0}
+          </p>
+        </div>
+        
         <div className="flex gap-3">
           <button onClick={() => setTab("deposit")}
             className="flex items-center gap-1.5 bg-white text-blue-700 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors">

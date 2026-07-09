@@ -61,7 +61,15 @@ export interface ShippingInfo {
   address: string;
   city: string;
   state: string;
+
   deliveryType: "delivery" | "pickup";
+
+  deliveryPayment: "store" | "dispatch";
+
+  deliveryArea: "Accra" | "Tema" | "Outside Accra";
+
+  deliveryFee: number;
+
   notes?: string;
 }
 
@@ -82,17 +90,24 @@ export interface Order {
 }
 
 export interface Receipt {
-  id: string;
+  id?: string;
   receiptNumber: string;
   orderId: string;
+  orderType?: "shop" | "bundle";
+
   customerId: string;
   customerName: string;
   customerEmail: string;
-  items: OrderItem[];
+  
+  items: {
+    name: string;
+    price: number;
+    quantity: number;
+  }[];
+
   totalAmount: number;
   paymentReference: string;
-  paidAt: string;
-  createdAt: Timestamp;
+  paidAt?: string;
 }
 
 export interface TrackingUpdate {

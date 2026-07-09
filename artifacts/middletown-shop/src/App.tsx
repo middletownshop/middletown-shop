@@ -10,7 +10,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import PaystackSuccess from "./pages/PaystackSuccess";
 import NotificationsPage from "@/pages/NotificationsPage";
 import SpinWinPage from "@/pages/SpinWinPage";
-
+import MyCouponsPage from "@/pages/MyCouponsPage";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import ProductsPage from "@/pages/ProductsPage";
@@ -34,12 +34,14 @@ import NotFoundPage from "@/pages/NotFoundPage";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminProducts from "@/pages/admin/AdminProducts";
 import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminCoupons from "@/pages/admin/AdminCoupons";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminBundles from "@/pages/admin/AdminBundles";
 import AdminComplaints from "@/pages/admin/AdminComplaints";
 import AdminWithdrawals from "@/pages/admin/AdminWithdrawals";
 import AdminNotices from "@/pages/admin/AdminNotices";
 import DeliverySettings from "@/pages/admin/DeliverySettings";
+import SpinManagement from "@/pages/admin/SpinManagement";
 
 function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -101,7 +103,8 @@ export default function App() {
 
             {/* Admin routes */}
             <Route path="/admin" element={<RequireAdmin><AdminLayout><AdminDashboard /></AdminLayout></RequireAdmin>} />
-            <Route path="/admin/products" element={<RequireAdmin><AdminLayout><AdminProducts /></AdminLayout></RequireAdmin>} />
+            <Route path="/admin/products" element={<RequireAdmin>
+<AdminLayout><AdminProducts /></AdminLayout></RequireAdmin>} />
             <Route path="/admin/orders" element={<RequireAdmin><AdminLayout><AdminOrders /></AdminLayout></RequireAdmin>} />
             <Route path="/admin/users" element={<RequireAdmin><AdminLayout><AdminUsers /></AdminLayout></RequireAdmin>} />
             <Route path="/admin/bundles" element={<RequireAdmin><AdminLayout><AdminBundles /></AdminLayout></RequireAdmin>} />
@@ -126,9 +129,33 @@ export default function App() {
                 </RequireAdmin>
               }
             />
+            <Route
+              path="/admin/coupons"
+              element={
+                <RequireAdmin>
+                  <AdminLayout>
+                    <AdminCoupons />
+                  </AdminLayout>
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="/admin/spin-management"
+              element={<SpinManagement />}
+            />
             {/* Dashboard shell routes (sidebar) */}
             <Route path="/dashboard" element={<RequireAuth><DashboardShell><DashboardPage /></DashboardShell></RequireAuth>} />
             <Route path="/wallet" element={<RequireAuth><DashboardShell><WalletPage /></DashboardShell></RequireAuth>} />
+            <Route
+              path="/my-coupons"
+              element={
+                <RequireAuth>
+                  <DashboardShell>
+                    <MyCouponsPage />
+                  </DashboardShell>
+                </RequireAuth>
+              }
+            />
             <Route path="/bundle-orders" element={<RequireAuth><DashboardShell><BundleOrdersPage /></DashboardShell></RequireAuth>} />
             <Route path="/complaints" element={<RequireAuth><DashboardShell><ComplaintsPage /></DashboardShell></RequireAuth>} />
             <Route path="/agent/apply" element={<RequireAuth><DashboardShell><BecomeAgentPage /></DashboardShell></RequireAuth>} />

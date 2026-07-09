@@ -44,18 +44,44 @@ export default function RewardPopup({
             <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
 
               <div className="text-6xl mb-4">
-                {isLose ? "😢" : "🎉"}
+                {isLose
+                  ? "😢"
+                  : prize.type === "wallet"
+                  ? "💰"
+                  : prize.type === "points"
+                  ? "⭐"
+                  : prize.type === "coupon"
+                  ? "🎟️"
+                  : prize.type === "data"
+                  ? "📱"
+                  : "🎉"}
               </div>
 
               <h2 className="text-3xl font-bold mb-3">
                 {isLose
                   ? "Better Luck Next Time!"
+                  : prize.type === "wallet"
+                  ? "Wallet Reward!"
+                  : prize.type === "points"
+                  ? "Points Earned!"
+                  : prize.type === "coupon"
+                  ? "Coupon Unlocked!"
+                  : prize.type === "data"
+                  ? "Data Bundle Won!"
                   : "Congratulations!"}
               </h2>
 
               <p className="text-lg text-gray-600 mb-6">
                 {isLose
                   ? "Come back tomorrow for another free spin."
+                  : prize.type === "wallet"
+                  ? `GH₵${prize.value} has been added to your wallet.`
+                  : prize.type === "points"
+                  ? `${prize.value} Reward Points have been added to your account.`
+                  : prize.type === "coupon"
+                  ? `A ${prize.value}% discount coupon has been added to your account.`
+                  : prize.type === "data"
+                  ? `You won ${prize.title}. It has been added to your rewards.`
                   : `You won ${prize.title}`}
               </p>
 

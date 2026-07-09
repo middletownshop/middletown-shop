@@ -55,23 +55,23 @@ const NETWORK_CONFIG: Record<
   }
 > = {
   MTN: {
-    bg: "#EAB308",
-    text: "#fff",
-    logo: "🟡",
+    bg: "#FFCC00",
+    text: "#1A1A1A",
+    logo: "/logos/mtn.png",
     prefixes: ["024", "054", "055", "059"],
   },
 
   Telecel: {
-    bg: "#EF4444",
-    text: "#fff",
-    logo: "🔴",
+    bg: "#E60000",
+    text: "#FFFFFF",
+    logo: "/logos/telecel.png",
     prefixes: ["020", "050"],
   },
 
   AirtelTigo: {
-    bg: "#3B82F6",
-    text: "#fff",
-    logo: "🔵",
+    bg: "#0057B8",
+    text: "#FFFFFF",
+    logo: "/logos/airteltigo.png",
     prefixes: ["026", "027", "056", "057"],
   },
 };
@@ -90,7 +90,7 @@ function PhoneModal({
 
   onConfirm: (
     phone: string,
-    paymentMethod: "wallet" | "paystack"
+    paymentMethod: "wallet"
   ) => void;
 
   onClose: () => void;
@@ -98,10 +98,7 @@ function PhoneModal({
 }) {
   const [phone, setPhone] = useState("");
 
-  const [paymentMethod, setPaymentMethod] =
-    useState<"wallet" | "paystack">(
-      "paystack"
-    );
+ 
 
   const cfg =
     NETWORK_CONFIG[bundle.network] ||
@@ -124,20 +121,7 @@ function PhoneModal({
     : bundlePrice;
 
   // Paystack fee
-  const percentageFee = 0.0195;
-  const fixedFee = 0.1;
-
-  const totalToPay =
-    Math.ceil(
-      ((finalPrice + fixedFee) /
-        (1 - percentageFee)) *
-        100
-    ) / 100;
-
-  const paystackFee =
-    totalToPay - finalPrice;
-  const canUseWallet =
-    balance >= finalPrice;
+ 
 
   const handleSubmit = (
     e: React.FormEvent
@@ -145,7 +129,7 @@ function PhoneModal({
     e.preventDefault();
 
     if (isValid) {
-      onConfirm(phone, paymentMethod);
+      onConfirm(phone, "wallet");
     }
   };
 
@@ -214,13 +198,19 @@ function PhoneModal({
               {/* Left */}
               <div>
                 <Badge
-                  className="mb-2 border-0"
+                  className="mb-2 border-0 flex items-center gap-2"
                   style={{
                     backgroundColor: cfg.bg,
-                    color: "#fff",
+                    color: cfg.text,
                   }}
                 >
-                  {cfg.logo} {bundle.network}
+                  <img
+                    src={cfg.logo}
+                    alt={bundle.network}
+                    className="h-4 w-auto object-contain"
+                  />
+
+                  <span>{bundle.network}</span>
                 </Badge>
 
                 <h2 className="text-3xl font-black text-black">
@@ -255,90 +245,43 @@ function PhoneModal({
                   Wallet: GHS {balance.toFixed(2)}
                 </p>
 
-                {paymentMethod === "paystack" && (
-                  <>
-                    <p className="text-xs text-orange-600 mt-1">
-                       Paystack Processing Fee: GHS {(paystackFee || 0).toFixed(2)}
-                    </p>
+                <p className="text-sm font-bold text-green-600 mt-1">
+                  Total: GHS {finalPrice.toFixed(2)}
+                </p>
 
-                    <p className="text-sm font-bold text-green-600">
-                      Total: GHS {(totalToPay || 0).toFixed(2)}
-                    </p>
-                  </>
-                )}
-          
-              </div>
-            </div>
+                    </div>
+                  </div>
 
-            
-          </div>
-          
-          {/* Payment Methods */}
+
+                </div>
+
+      
+          {/* Wallet Payment */}
           <div className="space-y-2">
             <Label className="text-black">
-              Payment Method
+              Wallet Payment
             </Label>
 
-            <div className="grid grid-cols-2 gap-3">
-              {/* Paystack */}
-              <button
-                type="button"
-                onClick={() =>
-                  setPaymentMethod(
-                    "paystack"
-                  )
-                }
-                className={`rounded-2xl border p-4 text-left transition-all ${
-                  paymentMethod ===
-                  "paystack"
-                    ? "border-primary bg-primary/5"
-                    : "border-gray-200"
-                }`}
-              >
-                <CreditCard className="h-5 w-5 mb-2 text-primary" />
+            <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
+              <div className="flex items-center gap-3">
+                <Wallet className="h-6 w-6 text-green-600" />
 
-                <p className="font-bold text-black">
-                  Paystack
-                </p>
+                <div>
+                  <p className="font-bold text-black">
+                    Wallet Balance
+                  </p>
 
-                <p className="text-xs text-gray-500">
-                  MOMO / Card
-                </p>
-              </button>
+                  <p className="text-green-600 text-lg font-bold">
+                    ₵{Number(profile?.walletBalance || 0).toLocaleString("en-GH")}
+                  </p>
+                </div>
+              </div>
 
-              {/* Wallet */}
-              <button
-                type="button"
-                disabled={!canUseWallet}
-                onClick={() =>
-                  setPaymentMethod(
-                    "wallet"
-                  )
-                }
-                className={`rounded-2xl border p-4 text-left transition-all ${
-                  paymentMethod ===
-                  "wallet"
-                    ? "border-primary bg-primary/5"
-                    : "border-gray-200"
-                } ${
-                  !canUseWallet
-                    ? "opacity-50"
-                    : ""
-                }`}
-              >
-                <Wallet className="h-5 w-5 mb-2 text-primary" />
-
-                <p className="font-bold text-black">
-                  Wallet
-                </p>
-
-                <p className="text-xs text-gray-500">
-                  Use balance
-                </p>
-              </button>
+              <p className="mt-2 text-sm text-gray-500">
+                This purchase will be paid directly from your wallet.
+              </p>
             </div>
           </div>
-
           {/* Form */}
           <form
             onSubmit={handleSubmit}
@@ -407,12 +350,6 @@ function PhoneModal({
             >
               {loading ? (
                 "Processing..."
-              ) : paymentMethod ===
-                "paystack" ? (
-                <span className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Continue to Paystack
-                </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Wallet className="h-4 w-4" />
@@ -738,38 +675,29 @@ export default function Shop() {
         collection(db, "receipts"),
         {
           orderId: orderRef.id,
+          orderType: "bundle",     // <-- ADD THIS
 
-          receiptNumber:
-            "RCT-" + Date.now(),
+          receiptNumber: "RCT-" + Date.now(),
 
           customerId: user.uid,
-          userName:
-          profile.displayName ||
-          "Customer",
+          customerName: profile.displayName || "Customer", // <-- also use customerName for consistency
+          customerEmail: profile.email || "",
 
-          customerEmail:
-            profile.email || "",
+          paymentReference: orderRef.id,
 
-          paymentReference:
-            orderRef.id,
+          totalAmount: finalPrice,
 
-          totalAmount:
-            finalPrice,
-
-          paidAt:
-            new Date().toISOString(),
+          paidAt: new Date().toISOString(),
 
           items: [
             {
-              name:
-                `${selectedBundle.network} ${selectedBundle.data}`,
+              name: `${selectedBundle.network} ${selectedBundle.data}`,
               quantity: 1,
               price: finalPrice,
             },
           ],
 
-          createdAt:
-            serverTimestamp(),
+          createdAt: serverTimestamp(),
         }
       );
       console.log("Receipt created:", receiptRef.id);
@@ -784,10 +712,6 @@ export default function Shop() {
 
       navigate(`/receipt/${receiptRef.id}`);
       await refreshProfile();
-
-      setTimeout(() => {
-        navigate(`/receipt/${receiptRef.id}`);
-      }, 500);
       
       toast({
         title: "Bundle Sent Successfully ⚡",
@@ -795,12 +719,6 @@ export default function Shop() {
       });
 
       setSelectedBundle(null);
-      toast({
-        title:
-          "Bundle Sent Successfully ⚡",
-
-        description: `${selectedBundle.network} ${selectedBundle.data} → ${phone}`,
-      });
 
       setSelectedBundle(null);
       } catch (error: any) {
@@ -926,9 +844,18 @@ export default function Shop() {
                       : {}
                   }
                 >
-                  {cfg
-                    ? `${cfg.logo} ${net}`
-                    : "All"}
+                  {cfg ? (
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={cfg.logo}
+                        alt={net}
+                        className="h-5 w-auto object-contain"
+                      />
+                      <span>{net}</span>
+                    </div>
+                  ) : (
+                    "All"
+                  )}
                 </button>
               );
             })}
@@ -1063,34 +990,44 @@ export default function Shop() {
 
                       <div className="relative p-4 flex flex-col h-full">
                         {/* Header */}
-                        <div className="flex items-start justify-between mt-5 mb-4">
-                          <div
-                            className="h-12 w-12 rounded-2xl flex items-center justify-center text-xl shadow-lg"
-                            style={{
-                              background: `linear-gradient(135deg, ${cfg.bg}, white)`,
-                            }}
-                          >
-                            {cfg.logo}
+                        <div className="flex items-center justify-between mb-5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-14 w-14 rounded-2xl bg-white shadow-md flex items-center justify-center p-2">
+                              <img
+                                src={cfg.logo}
+                                alt={bundle.network}
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+
+                            <div>
+                              <h3 className="text-lg font-black">
+                                {bundle.network}
+                              </h3>
+
+                              <p className="text-xs text-gray-500">
+                                Ghana Telecom
+                              </p>
+                            </div>
                           </div>
 
-                          <Badge
-                            className="border-0 rounded-full text-[11px] font-bold shadow-sm"
-                            style={{
-                              backgroundColor: `${cfg.bg}20`,
-                              color: cfg.bg,
-                            }}
-                          >
-                            {
-                              bundle.network
-                            }
-                          </Badge>
+                          {bundle.flashSale && (
+                            <div className="rounded-full bg-red-500 px-3 py-1 text-[10px] font-black text-white animate-pulse">
+                              FLASH SALE
+                            </div>
+                          )}
                         </div>
+                         
 
                         {/* Size */}
                         <div className="space-y-1 mb-3">
-                          <h2 className="text-3xl font-black leading-none text-black">
+                          <h2 className="text-4xl font-black text-gray-900">
                             {bundle.data}
                           </h2>
+
+                          <p className="text-sm text-gray-500 mt-1">
+                            High-Speed Internet Bundle
+                          </p>
 
                           <div className="flex items-center gap-1 text-xs text-gray-500">
                             <Clock className="h-3.5 w-3.5" />
@@ -1128,7 +1065,7 @@ export default function Shop() {
                               </p>
                             </>
                           ) : (
-                            <span className="text-3xl font-black text-black">
+                            <span className="text-4xl font-black text-green-600">
                               GHS{" "}
                               {basePrice.toFixed(2)}
                             </span>
@@ -1160,8 +1097,8 @@ export default function Shop() {
                             background: `linear-gradient(135deg, ${cfg.bg}, ${cfg.bg}CC)`,
                           }}
                         >
-                          <Phone className="h-4 w-4 mr-2" />
-                          Buy Now
+                          <Wallet className="h-4 w-4 mr-2" />
+                          Buy Bundle
                         </Button>
                       </div>
                     </div>

@@ -4,8 +4,15 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { createOrder, markOrderPaid, createReceipt } from "@/lib/firestore";
 import toast from "react-hot-toast";
-import { Shield, CreditCard } from "lucide-react";
-import { doc, runTransaction } from "firebase/firestore";
+import { 
+  doc,
+  runTransaction,
+  getDocs,
+  updateDoc,
+  collection,
+  query,
+  where
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { getDeliverySettings } from "@/lib/firestore";
 
@@ -50,9 +57,11 @@ export default function CheckoutPage() {
     notes: "",
   });
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"paystack" | "wallet">("paystack");
+  const paymentMethod = "wallet";
   const [deliverySettings, setDeliverySettings] = useState<any>(null);
-
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
   
   const update = (field: keyof ShippingForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [field]: e.target.value }));
@@ -70,7 +79,12 @@ export default function CheckoutPage() {
       : 0;
 
   
-  const finalTotal = cartTotal + deliveryFee;
+  const subtotalWithDelivery = cartTotal + deliveryFee;
+
+  const finalTotal = Math.max(
+    subtotalWithDelivery - couponDiscount,
+    0
+  );
 
   useEffect(() => {
     async function loadSettings() {
@@ -84,7 +98,81 @@ export default function CheckoutPage() {
 
     loadSettings();
   }, []);
-  
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("Enter coupon code");
+      return;
+    }
+
+    try {
+      const q = query(
+        collection(db, "coupons"),
+        where("code", "==", couponCode.trim())
+      );
+
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        toast.error("Coupon not found");
+        return;
+      }
+
+      const couponDoc = snapshot.docs[0];
+      const coupon = couponDoc.data();
+
+      if (coupon.used) {
+        toast.error("Coupon already used");
+        return;
+      }
+
+      if (coupon.userId !== user?.uid) {
+        toast.error("This coupon is not yours");
+        return;
+      }
+
+      const expiry = coupon.expiresAt.toDate();
+
+      if (expiry < new Date()) {
+        toast.error("Coupon expired");
+        return;
+      }
+
+      const discountAmount =
+        (cartTotal + deliveryFee) *
+        (coupon.discount / 100);
+
+      setAppliedCoupon({
+        id: couponDoc.id,
+        ...coupon,
+      });
+
+      setCouponDiscount(discountAmount);
+
+      toast.success(`${coupon.discount}% coupon applied`);
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to apply coupon");
+    }
+  };
+  const markCouponUsed = async () => {
+    if (!appliedCoupon) return;
+
+    try {
+      const couponRef = doc(
+        db,
+        "coupons",
+        appliedCoupon.id
+      );
+
+      await updateDoc(couponRef, {
+        used: true,
+      });
+
+    } catch (error) {
+      console.error("Coupon update failed", error);
+    }
+  };
   const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { navigate("/login"); return; }
@@ -152,8 +240,7 @@ export default function CheckoutPage() {
         paymentReference: reference,
       });
 
-      setLoading(false);
-      if (paymentMethod === "wallet") {
+      {
 
         const walletBalance =
           Number(userProfile?.walletBalance || 0);
@@ -193,137 +280,40 @@ export default function CheckoutPage() {
           "GHS",
           new Date().toISOString()
         );
-
+        await markCouponUsed();
+        
         const receiptId = await createReceipt({
           receiptNumber: `RCP-${Date.now()}`,
           orderId,
+          orderType: "shop",
+
           customerId: user.uid,
           customerName: name,
           customerEmail: user.email || "",
 
           items: cartItems.map(i => ({
-            productId: i.productId,
             name: i.name,
             price: i.price,
             quantity: i.quantity,
-            image: i.image,
           })),
 
           totalAmount: finalTotal,
           paymentReference: reference,
           paidAt: new Date().toISOString(),
         });
-
         await refreshProfile();
         
         clearCart();
 
         toast.success("Payment successful");
 
+        setLoading(false);
+        
         navigate(`/receipt/${receiptId}`);
         return;
       }
-      
-      // Open Paystack
-      const PaystackPop = (window as any).PaystackPop;
-
-      if (!PaystackPop) {
-        toast.error("Paystack not loaded");
-        setLoading(false);
-        return;
-      }
-
-      if (!user?.email) {
-        toast.error("No email found on account");
-        setLoading(false);
-        return;
-      }
-
-      const verifyPayment = async (
-        response: { reference: string }
-      ) => {
-        try {
-          setLoading(true);
-
-          const verifyRes = await fetch(
-            `${import.meta.env.VITE_API_URL}/paystack/verify/${response.reference}`
-          );
-
-          const result = await verifyRes.json();
-
-          if (!result.success) {
-            toast.error("Payment verification failed");
-            return;
-          }
-
-          await markOrderPaid(
-            orderId,
-            response.reference,
-            finalTotal,
-            "GHS",
-            new Date().toISOString()
-          );
-
-          const receiptId = await createReceipt({
-            receiptNumber: `RCP-${Date.now()}`,
-            orderId,
-            customerId: user.uid,
-            customerName: name,
-            customerEmail: user.email,
-            items: cartItems.map((i) => ({
-              productId: i.productId,
-              name: i.name,
-              price: i.price,
-              quantity: i.quantity,
-              image: i.image,
-            })),
-            totalAmount: finalTotal,
-            paymentReference: response.reference,
-            paidAt: new Date().toISOString(),
-          });
-
-          clearCart();
-
-          toast.success("Payment Successful");
-
-          navigate(`/receipt/${receiptId}`);
-        } catch (err) {
-          console.error(err);
-          toast.error("Verification failed");
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      console.log("Paystack key:", import.meta.env.VITE_PAYSTACK_PUBLIC_KEY);
-      console.log("User email:", user.email);
-      console.log("Amount:", cartTotal * 100);
-
-      const handler = PaystackPop.setup({
-        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-        email: user.email,
-        amount: Math.round(cartTotal * 100),
-        currency: "GHS",
-        ref: reference,
-
-        metadata: {
-          orderId,
-          customerName: name,
-          uid: user.uid,
-        },
-
-        callback: function (response: any) {
-          verifyPayment(response);
-        },
-
-        onClose: function () {
-          toast.error("Payment cancelled");
-          setLoading(false);
-        },
-      });
-
-      handler.openIframe();
-      handler?.openIframe();
+  
+     
     } catch (err) {
       console.error(err);
       toast.error("Failed to initiate checkout. Please try again.");
@@ -625,46 +615,23 @@ export default function CheckoutPage() {
                 <span className="w-6 h-6 bg-primary text-white rounded-full flex items-center justify-center text-xs">
                   2
                 </span>
-                Payment Method
+                Wallet Payment
               </h2>
 
-              <div className="space-y-3">
+              <div className="border rounded-xl p-4 bg-green-50">
 
-                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={paymentMethod === "paystack"}
-                    onChange={() => setPaymentMethod("paystack")}
-                  />
-                  <span>Paystack</span>
-                </label>
+                <p className="font-semibold">
+                  Wallet Balance
+                </p>
 
-                <label className="flex items-center gap-3 p-4 border rounded-xl cursor-pointer">
-                  <input
-                    type="radio"
-                    checked={paymentMethod === "wallet"}
-                    onChange={() => setPaymentMethod("wallet")}
-                  />
-                  <div>
-                    <p>Wallet Balance</p>
-                    <p className="text-xs">
-                      ₵{Number(userProfile?.walletBalance || 0).toLocaleString("en-GH")}
-                    </p>
-                  </div>
-                </label>
+                <p className="text-2xl font-bold text-green-600">
+                  ₵{Number(userProfile?.walletBalance || 0).toLocaleString("en-GH")}
+                </p>
 
-              </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  Your order will be paid directly from your wallet.
+                </p>
 
-              <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                <Shield className="w-3.5 h-3.5 text-green-500" />
-                <span>Your payment is secured by Paystack.</span>
-              </div>
-
-            </div>
-
-              <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
-                <Shield className="w-3.5 h-3.5 text-green-500" />
-                <span>Your payment is secured by Paystack.</span>
               </div>
 
             </div>
@@ -687,11 +654,51 @@ export default function CheckoutPage() {
               </div>
               <div className="border-t border-border pt-3 mb-5">
 
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-2">
+                    Have a coupon?
+                  </label>
+
+                  <div className="flex gap-2">
+                    <input
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Enter coupon code"
+                      className="flex-1 border rounded-lg px-3 py-2 text-sm"
+                      disabled={!!appliedCoupon}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={applyCoupon}
+                      disabled={!!appliedCoupon}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50"
+                    >
+                      {appliedCoupon ? "Applied" : "Apply"}
+                    </button>
+                  </div>
+
+                  {appliedCoupon && (
+                    <p className="text-green-600 text-sm mt-2">
+                      ✓ {appliedCoupon.discount}% discount applied
+                    </p>
+                  )}
+                </div>
+                
                 <div className="flex justify-between text-sm">
                   <span>Subtotal</span>
                   <span>₵{cartTotal.toLocaleString("en-GH")}</span>
                 </div>
 
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-sm mt-2 text-green-600">
+                    <span>Coupon Discount</span>
+                    <span>
+                      -₵{couponDiscount.toLocaleString("en-GH")}
+                    </span>
+                  </div>
+                )}
+                
                 {form.deliveryType === "delivery" &&
                   form.deliveryPayment === "store" && (
                     <div className="flex justify-between text-sm mt-2">
@@ -740,10 +747,12 @@ export default function CheckoutPage() {
                   <>Pay ₵{Number(finalTotal || 0).toLocaleString("en-GH")}</>
                 )}
               </button>
-            </div>
-          </div>
-        </div>
-      </form>
-    </div>
-  );
-}
+               </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              );
+            }
+                       

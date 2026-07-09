@@ -35,7 +35,7 @@ export async function createUserProfile(uid: string, data: Partial<UserProfile>)
 
     rewardPoints: 0,
 
-    availableSpins: 1,
+    availableSpins: 10,
 
     lastSpin: null,
 
@@ -495,6 +495,18 @@ export async function deleteComplaint(id: string): Promise<void> {
   await deleteDoc(doc(db, "complaints", id));
 }
 
+function generateCouponCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  let code = "MT-";
+
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+
+  return code;
+}
+
 export async function saveSpinResult(
   uid: string,
   prize: WheelPrize
@@ -530,9 +542,24 @@ export async function saveSpinResult(
       // We'll implement data bundle rewards in the next step.
       break;
 
-    case "coupon":
-      // Coupon system comes later.
-      break;
+      case "coupon": {
+        const code = generateCouponCode();
+
+        // Coupon expires in 30 days
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+
+        await addDoc(collection(db, "coupons"), {
+          userId: uid,
+          code,
+          discount: prize.value,
+          used: false,
+          createdAt: serverTimestamp(),
+          expiresAt,
+        });
+
+        break;
+      }
 
     case "lose":
       // Nothing to award.
@@ -570,20 +597,8 @@ export async function getLatestSpinWinners() {
   }));
 }
 export async function useAvailableSpin(uid: string) {
-  const userRef = doc(db, "users", uid);
-
-  const snap = await getDoc(userRef);
-
-  if (!snap.exists()) return;
-
-  const data = snap.data();
-
-  const current = data.availableSpins ?? 1;
-
-  if (current <= 0) return;
-
-  await updateDoc(userRef, {
-    availableSpins: current - 1,
+  await updateDoc(doc(db, "users", uid), {
+    availableSpins: increment(-1),
   });
 }
 export async function addAvailableSpins(

@@ -3,7 +3,7 @@ import { NavLink } from "react-router-dom";
 import {
   Home,
   LayoutDashboard,
-  Wallet,
+  Wallet, Ticket,
   Signal,
   Package,
   Receipt,
@@ -21,6 +21,7 @@ const userLinks = [
   { to: "/", label: "Home", icon: <Home className="w-4 h-4" />, end: true },
   { to: "/dashboard", label: "Overview", icon: <LayoutDashboard className="w-4 h-4" /> },
   { to: "/wallet", label: "Wallet", icon: <Wallet className="w-4 h-4" /> },
+  { to: "/my-coupons", label: "My Coupons", icon: <Ticket className="w-4 h-4" /> },
   { to: "/bundles", label: "Data Bundles", icon: <Signal className="w-4 h-4" /> },
   { to: "/orders", label: "My Orders", icon: <Package className="w-4 h-4" /> },
   { to: "/bundle-orders", label: "Bundle Orders", icon: <Receipt className="w-4 h-4" /> },
