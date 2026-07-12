@@ -181,10 +181,23 @@ export async function getOrder(id: string): Promise<Order | null> {
 }
 
 export async function getCustomerOrders(customerId: string): Promise<Order[]> {
-  const q = query(collection(db, "orders"), where("customerId", "==", customerId));
+  const q = query(
+    collection(db, "orders"),
+    where("customerId", "==", customerId),
+    where("paymentVerified", "==", true)
+  );
+
   const snap = await getDocs(q);
-  const orders = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
-  return orders.sort((a, b) => ((b as any).createdAt?.toMillis?.() ?? 0) - ((a as any).createdAt?.toMillis?.() ?? 0));
+
+  const orders = snap.docs.map(
+    d => ({ id: d.id, ...d.data() } as Order)
+  );
+
+  return orders.sort(
+    (a, b) =>
+      ((b as any).createdAt?.toMillis?.() ?? 0) -
+      ((a as any).createdAt?.toMillis?.() ?? 0)
+  );
 }
 
 export async function getAllOrders(): Promise<Order[]> {

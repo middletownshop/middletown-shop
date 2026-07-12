@@ -9,6 +9,8 @@ interface Notification {
   message: string;
   read: boolean;
   userId: string;
+  target?: string;
+  type?: "general" | "delivery";
   createdAt?: any;
 }
 

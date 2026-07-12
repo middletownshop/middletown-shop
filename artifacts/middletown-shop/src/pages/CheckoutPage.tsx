@@ -391,9 +391,9 @@ export default function CheckoutPage() {
                       <div className="pt-2">
                         <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Delivery Target Zone</label>
                         <select value={form.deliveryArea} onChange={update("deliveryArea")} className="w-full border border-border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none">
-                          <option value="Accra">Accra Hub Corridor (₵{deliveryFees.Accra})</option>
-                          <option value="Tema">Tema / Greater Port Line (₵{deliveryFees.Tema})</option>
-                          <option value="Outside Accra">Outside Accra Regional Line (₵{deliveryFees["Outside Accra"]})</option>
+                          <option value="Accra">Accra/ Greater (₵{deliveryFees.Accra})</option>
+                          <option value="Tema">Tema / Greater  (₵{deliveryFees.Tema})</option>
+                          <option value="Outside Accra">Outside Accra  (₵{deliveryFees["Outside Accra"]})</option>
                         </select>
                       </div>
                     )}

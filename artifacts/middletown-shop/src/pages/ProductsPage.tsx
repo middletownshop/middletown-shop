@@ -78,21 +78,25 @@ export default function ProductsPage() {
     return products
       .filter(product => {
         if (!category) return true;
-        if (category === "market") return ["market", "physical", "digital"].includes(product.category);
-        return product.category === category;
+        const prodCat = product?.category || "";
+        if (category === "market") return ["market", "physical", "digital"].includes(prodCat);
+        return prodCat === category;
       })
       .filter(product => {
         if (!search) return true;
         const query = search.toLowerCase();
-        return product.name.toLowerCase().includes(query) || (product.description || "").toLowerCase().includes(query);
+        const productName = (product?.name || "").toLowerCase();
+        const productDesc = (product?.description || "").toLowerCase();
+
+        return productName.includes(query) || productDesc.includes(query);
       })
       .filter(product => {
         if (!min) return true;
-        return product.price >= Number(min);
+        return (product?.price || 0) >= Number(min);
       })
       .filter(product => {
         if (!max) return true;
-        return product.price <= Number(max);
+        return (product?.price || 0) <= Number(max);
       });
   }, [products, category, search, min, max]);
 
