@@ -3,6 +3,7 @@ export type PrizeType =
   | "data"
   | "points"
   | "coupon"
+  | "spin"
   | "lose";
 
 export interface WheelPrize {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Gift,
@@ -6,6 +6,9 @@ import {
   Clock,
   Coins,
   Sparkles,
+  Volume2,
+  VolumeX,
+  Wallet
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import SpinWheel from "@/components/games/SpinWheel";
@@ -17,15 +20,16 @@ import RewardPopup from "@/components/games/RewardPopup";
 import { WheelPrize } from "@/types/game";
 import {
   saveSpinResult,
-  getLatestSpinWinners,useAvailableSpin
+  getLatestSpinWinners, useAvailableSpin,
 } from "@/lib/firestore";
 import {
   playClick,
   playSpin,
   stopSpin,
   playWin,
-  playLose,playBackground,
-    stopBackground,
+  playLose,
+  playBackground,
+  stopBackground,
 } from "@/lib/games/sounds";
 import { doc, runTransaction, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -34,7 +38,7 @@ import toast from "react-hot-toast";
 export default function SpinWinPage() {
   const { userProfile, refreshProfile } = useAuth();
 
-  const [timeLeft, setTimeLeft] = useState("Loading...");
+  const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [canSpin, setCanSpin] = useState(true);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -42,12 +46,16 @@ export default function SpinWinPage() {
   const [popupOpen, setPopupOpen] = useState(false);
   const [wonPrize, setWonPrize] = useState<WheelPrize | null>(null);
   const [winners, setWinners] = useState<any[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const prizeRef = useRef<WheelPrize | null>(null);
+
   const SPIN_PACKAGES = [
     { spins: 1, price: 1 },
     { spins: 3, price: 2.5 },
     { spins: 10, price: 7 },
     { spins: 20, price: 12 },
   ];
+
   const [selectedPackage, setSelectedPackage] = useState<{
     spins: number;
     price: number;
@@ -55,77 +63,72 @@ export default function SpinWinPage() {
 
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [buyingSpins, setBuyingSpins] = useState(false);
-  const [localSpins, setLocalSpins] = useState(0);
+  const [localSpins, setLocalSpins] = useState(
+    userProfile?.availableSpins ?? 0
+  );
 
   useEffect(() => {
     setLocalSpins(userProfile?.availableSpins ?? 0);
   }, [userProfile?.availableSpins]);
-  
-  useEffect(() => {
-    playBackground();
 
+  useEffect(() => {
+    if (!isMuted) {
+      playBackground();
+    } else {
+      stopBackground();
+    }
     return () => {
       stopBackground();
     };
-  }, []);
-  
-  const handleSpin = () => {
+  }, [isMuted]);
+
+  const handleSpin = async () => {
     if (spinning || spinLocked) return;
     playClick();
-    const spins = localSpins;
-
+    const spins = userProfile?.availableSpins ?? 0;
     if (spins <= 0) {
-      toast.error("No spins available.");
-      return;
+        toast.error("No spins available.");
+        return;
     }
 
-    // Deduct immediately on the UI
-    setLocalSpins(spins - 1);
-
     const prize = pickPrize();
-
+    prizeRef.current = prize;
     setWonPrize(prize);
+    setLocalSpins(prev => prev - 1);
 
-    const rotate = calculateRotation(prize.id);
+    if (userProfile) {
+      await useAvailableSpin(userProfile.uid);
+    }
 
-    setRotation(rotate);
-
+    const newRotation = calculateRotation(prize, rotation);
+    setRotation(newRotation);
     setSpinLocked(true);
     setSpinning(true);
     playSpin();
   };
- 
+
   async function buySpinsWithWallet() {
     if (!userProfile || !selectedPackage) return;
-
     setBuyingSpins(true);
 
     try {
       const userRef = doc(db, "users", userProfile.uid);
-
       await runTransaction(db, async (tx) => {
         const snap = await tx.get(userRef);
-
-        if (!snap.exists()) {
-          throw new Error("User not found");
-        }
-
+        if (!snap.exists()) throw new Error("User not found");
         const data = snap.data();
-
         const balance = Number(data.walletBalance || 0);
 
         if (balance < selectedPackage.price) {
           throw new Error("Insufficient wallet balance");
         }
 
-        
         tx.update(userRef, {
           walletBalance: balance - selectedPackage.price,
-          availableSpins:
-            Number(data.availableSpins || 0) + selectedPackage.spins,
+          availableSpins: Number(data.availableSpins || 0) + selectedPackage.spins,
         });
       });
-      
+
       await addDoc(collection(db, "spinPurchases"), {
         userId: userProfile.uid,
         userName: userProfile.displayName || userProfile.email || "Unknown User",
@@ -137,506 +140,265 @@ export default function SpinWinPage() {
       });
 
       await refreshProfile();
-      // Allow the user to spin immediately
       setCanSpin(true);
-      setTimeLeft("Ready to Spin");
       setShowPurchaseModal(false);
       setSelectedPackage(null);
+      toast.success(`${selectedPackage.spins} spins added!`);
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setBuyingSpins(false);
+    }
+  }
 
-      setTimeout(() => {
-        document
-          .getElementById("spin-wheel")
-          ?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-      }, 300);
-     
-      
-      toast.success(
-        `${selectedPackage.spins} spins added successfully!`
-      );
-
-      setShowPurchaseModal(false);
-      setSelectedPackage(null);
-      } catch (err: any) {
-        toast.error(err.message);
-      } finally {
-        setBuyingSpins(false);
-      }
-      }
-  
   useEffect(() => {
     const updateCountdown = () => {
       if (!userProfile?.lastSpin) {
         setCanSpin(true);
-        setTimeLeft("Ready to Spin");
+        setTimeLeft("Ready!");
         return;
       }
 
-      
-      const last =
-        userProfile.lastSpin.seconds
-          ? userProfile.lastSpin.seconds * 1000
-          : new Date(userProfile.lastSpin).getTime();
+      const last = userProfile.lastSpin.seconds
+        ? userProfile.lastSpin.seconds * 1000
+        : new Date(userProfile.lastSpin).getTime();
 
       const next = last + 24 * 60 * 60 * 1000;
-
       const diff = next - Date.now();
-
       const availableSpins = userProfile?.availableSpins ?? 0;
 
-      if (availableSpins > 0) {
+      if (availableSpins > 0 || diff <= 0) {
         setCanSpin(true);
-        setTimeLeft("Ready to Spin");
-        return;
-      }
-
-      if (diff <= 0) {
-        setCanSpin(true);
-        setTimeLeft("Ready to Spin");
+        setTimeLeft("Ready!");
         return;
       }
 
       setCanSpin(false);
-
-      const hours = Math.floor(diff / 3600000);
-      const minutes = Math.floor((diff % 3600000) / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-
-      setTimeLeft(
-        `${hours}h ${minutes}m ${seconds}s`
-      );
+      const hours = String(Math.floor(diff / 3600000)).padStart(2, "0");
+      const minutes = String(Math.floor((diff % 3600000) / 60000)).padStart(2, "0");
+      const seconds = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
+      setTimeLeft(`${hours}:${minutes}:${seconds}`);
     };
 
     updateCountdown();
-
     const interval = setInterval(updateCountdown, 1000);
-
     return () => clearInterval(interval);
   }, [userProfile]);
 
-  useEffect(() => {
-    const loadWinners = async () => {
-      try {
-        const data = await getLatestSpinWinners();
-        setWinners(data);
-      } catch (error) {
-        console.error("Failed to load winners:", error);
-      }
-    };
-
-    loadWinners();
-  }, []);
-  
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#0f172a] via-[#4c1d95] to-[#7c2d12]">
+    <div className="relative min-h-screen w-full bg-[#090514] flex justify-center items-center font-sans selection:bg-amber-500/30">
 
-    {/* Animated Background */}
-    <div className="absolute inset-0 overflow-hidden">
+      {/* Immersive background decoration for desktop views */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(76,29,149,0.2)_0%,rgba(15,23,42,1)_100%)] z-0" />
 
-      <motion.div
-        className="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-yellow-400/20 blur-3xl"
-        animate={{
-          x: [0, 120, 0],
-          y: [0, 80, 0],
-        }}
-        transition={{
-          duration: 10,
-          repeat: Infinity,
-        }}
-      />
+      {/* CASINO MOBILE FRAME CONTAINER */}
+      <div className="relative z-10 w-full h-screen sm:h-[840px] sm:w-[410px] bg-gradient-to-b from-[#1a0b2e] via-[#120720] to-[#0a0314] sm:rounded-[40px] sm:shadow-[0_0_50px_rgba(0,0,0,0.8),0_0_0_12px_#26193c] overflow-y-auto overflow-x-hidden flex flex-col justify-between scrollbar-none">
 
-      <motion.div
-        className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-pink-500/20 blur-3xl"
-        animate={{
-          x: [0, -120, 0],
-          y: [0, -80, 0],
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-        }}
-      />
-
-    </div>
-      
-    <div className="relative z-10">
-      {Array.from({ length: 25 }).map((_, i) => (
-
-        <motion.div
-          key={i}
-          className="absolute text-yellow-300 text-xl"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -25, 0],
-            opacity: [0.3, 1, 0.3],
-            rotate: [0, 360],
-          }}
-          transition={{
-            duration: 2 + Math.random() * 3,
-            repeat: Infinity,
-          }}
-        >
-          ✨
-        </motion.div>
-
-      ))}
-      
-      {/* Hero */}
-
-      <div className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white">
-
-        <div className="max-w-7xl mx-auto px-4 py-12">
-
-          <motion.div
-            initial={{ opacity: 0, y: -30 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-
-            <h1 className="text-4xl font-extrabold flex items-center gap-3">
-
-              🎡 Spin & Win
-
+        {/* TOP BAR / HEADER */}
+        <div className="sticky top-0 z-30 bg-[#1a0b2e]/90 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-purple-900/30">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">🎰</span>
+            <h1 className="text-sm font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-yellow-500">
+              SPIN & WIN
             </h1>
+          </div>
 
-            <motion.p
-              className="mt-3 text-white/90 max-w-xl text-lg"
-              animate={{
-                opacity: [0.6, 1, 0.6],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-              }}
+          {/* User balances */}
+          <div className="flex items-center gap-2">
+            <div className="bg-purple-950/60 border border-purple-500/20 rounded-full py-1 px-2.5 flex items-center gap-1.5 shadow-inner">
+              <Wallet className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-xs font-bold text-emerald-400">
+                ₵{Number(userProfile?.walletBalance || 0).toFixed(1)}
+              </span>
+            </div>
+
+            <button 
+              onClick={() => setIsMuted(!isMuted)} 
+              className="p-1.5 rounded-full bg-purple-900/40 border border-purple-500/20 text-purple-300 hover:text-white"
             >
-              Spin once every day to win exciting Coupons,
-              Reward Points and other surprise rewards.
-              </motion.p>
-
-          </motion.div>
-
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
 
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-10">
-
-        {/* Reward Cards */}
-
-        <div className="grid md:grid-cols-4 gap-5 mb-10">
-
-          <RewardCard
-            icon={<Sparkles />}
-            title="Coupons"
-            value="5% & 10%"
-          />
-
-          <RewardCard
-            icon={<Trophy />}
-            title="Reward Points"
-            value="100 - 1000"
-          />
-
-          <RewardCard
-            icon={<Gift />}
-            title="Daily Spin"
-            value="1 Free Spin"
-          />
-
-          <RewardCard
-            icon={<Coins />}
-            title="Lucky Chance"
-            value="Try Again"
-          />
-        </div>
-        </div>
-        {/* Main Area */}
-
-        <div className="grid lg:grid-cols-3 gap-8">
-
-          {/* Wheel Placeholder */}
-
-          <div className="lg:col-span-2 bg-white rounded-3xl shadow-xl p-4 sm:p-6 lg:p-8">
-
-            <div className="flex justify-center">
-              <div className="w-full max-w-[320px] sm:max-w-[420px] lg:max-w-[500px] mx-auto">
-                <SpinWheel
-                  rotation={rotation}
-                  spinning={spinning}
-                  canSpin={
-                    !spinning && (userProfile?.availableSpins ?? 0) > 0
-                  }
-                  spinLabel={
-                    spinning
-                      ? "Spinning..."
-                      : (userProfile?.availableSpins ?? 0) > 0
-                      ? "SPIN"
-                      : "Buy Spins"
-                  }
-                  onSpin={handleSpin}
-                  onComplete={async () => {
-                    stopSpin();
-                    setSpinning(false);
-
-                    setPopupOpen(true);
-
-                    if (wonPrize?.type === "lose") {
-                      playLose();
-                    } else {
-                      playWin();
-                    }
-
-                    if (userProfile && wonPrize) {
-                      saveSpinResult(userProfile.uid, wonPrize)
-                        .then(() => useAvailableSpin(userProfile.uid))
-                        .then(() => refreshProfile())
-                        .then(async () => {
-                          const latest = await getLatestSpinWinners();
-                          setWinners(latest);
-                        })
-                        .catch(console.error);
-                    }
-                  }}
-                />
-              </div>
+        {/* COMPACT HERO DECK */}
+        <div className="px-4 pt-4 text-center">
+          <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-2xl p-3 shadow-lg">
+            <div className="flex items-center justify-center gap-1 text-xs font-bold text-amber-400 uppercase tracking-widest mb-1">
+              <Sparkles className="w-3 h-3 animate-spin" /> Daily Lucky Draw <Sparkles className="w-3 h-3 animate-spin" />
             </div>
-           
+            <p className="text-[11px] text-purple-200/80 leading-tight">
+              Spin the gold wheel to win vouchers, premium reward milestones, or instant multipliers!
+            </p>
+          </div>
+        </div>
+
+        {/* MAIN GAME HUBLIST / THE WHEEL */}
+        <div className="flex-1 flex flex-col justify-center items-center py-4 relative">
+          <div className="scale-90 sm:scale-95 transition-transform origin-center">
+            <SpinWheel
+              rotation={rotation}
+              spinning={spinning}
+              canSpin={!spinning && localSpins > 0}
+              spinLabel={spinning ? "..." : "SPIN"}
+              onSpin={handleSpin}
+              onComplete={async () => {
+                stopSpin();
+
+                // 1. Instantly release the local animations
+                setSpinning(false);
+                setSpinLocked(false);
+
+                const prize = prizeRef.current;
+                if (!prize) return;
+
+                console.log("FINAL PRIZE", prize.id, prize.title);
+
+                setWonPrize(prize);
+                setPopupOpen(true);
+
+                if (prize.type === "lose") {
+                  playLose();
+                } else {
+                  playWin();
+                }
+
+                // 🔥 CRITICAL FIX: If they won a Free Spin, instantly increment 
+                // the local state so the button unlocks right away!
+                if (prize.type === "spin") {
+                  setLocalSpins(prev => prev + 1);
+                  setCanSpin(true);
+                  setTimeLeft("Ready!");
+                }
+
+                if (userProfile) {
+                  try {
+                    // 2. Sync to the backend database in the background
+                    await saveSpinResult(userProfile.uid, prize);
+
+                    // 3. Pull down fresh profile properties
+                    await refreshProfile();
+
+                    const latest = await getLatestSpinWinners();
+                    setWinners(latest);
+                  } catch (error) {
+                    console.error("Failed to sync win to database:", error);
+                  }
+                }
+              }}
+            />
           </div>
 
-          {/* Sidebar */}
-
-          <div className="space-y-6">
-
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-
-              <div className="flex items-center gap-3">
-                <Clock className="text-orange-500" />
-                <h3 className="font-bold">Next Free Spin</h3>
-              </div>
-              <div className="bg-white rounded-2xl shadow-xl p-6 mt-6">
-
-                <h3 className="text-xl font-bold mb-4">
-                  🎰 Buy More Spins
-                </h3>
-
-                <p className="text-sm text-gray-500 mb-5">
-                  Out of spins? Purchase more and keep playing.
-                </p>
-
-                <div className="space-y-3">
-
-                  {SPIN_PACKAGES.map((pack) => (
-
-                   <button
-                     key={pack.spins}
-                     onClick={() => {
-                       playClick();
-                       setSelectedPackage(pack);
-                       setShowPurchaseModal(true);
-                     }}
-                      className="w-full flex justify-between items-center rounded-xl border p-4 hover:border-orange-500 hover:bg-orange-50 transition"
-                    >
-
-                      <div>
-
-                        <p className="font-bold">
-                          {pack.spins} Spin{pack.spins > 1 ? "s" : ""}
-                        </p>
-
-                        <p className="text-xs text-gray-500">
-                          Instant activation
-                        </p>
-
-                      </div>
-
-                      <div className="text-right">
-
-                        <p className="font-bold text-orange-600">
-                          ₵{pack.price}
-                        </p>
-
-                        <p className="text-xs">
-                          Buy
-                        </p>
-
-                      </div>
-
-                    </button>
-
-                  ))}
-
-                </div>
-
-              </div>
-              
-              <p className="text-3xl font-bold mt-5">
-                {timeLeft}
+          {/* QUICK HUD: REMAINING SPINS */}
+          <div className="mt-2 text-center z-10">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black px-4 py-1.5 rounded-full text-xs tracking-wider shadow-[0_4px_20px_rgba(245,158,11,0.4)]">
+              <span>🎡 {localSpins} SPINS LEFT</span>
+            </div>
+            {localSpins === 0 && (
+              <p className="text-[11px] text-amber-400/80 mt-1.5 font-medium animate-pulse">
+                Next Free Spin: {timeLeft}
               </p>
+            )}
+          </div>
+        </div>
 
-              <div className="mt-6 border-t pt-4">
+        {/* LOWER SECTION: ACTIONS & STORE */}
+        <div className="px-4 pb-6 space-y-4">
 
-                <p className="text-sm text-gray-500">
-                  Available Spins
-                </p>
+          {/* BUY TICKETS TABS */}
+          <div className="bg-purple-950/40 border border-purple-900/40 rounded-2xl p-3">
+            <h3 className="text-xs font-black text-purple-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <span>🛒</span> Buy Extra Spins
+            </h3>
 
-                <p className="text-2xl font-bold text-orange-600">
-                  🎡 {localSpins}
-                </p>
-
-              </div>
-
+            <div className="grid grid-cols-2 gap-2">
+              {SPIN_PACKAGES.slice(0, 4).map((pack) => (
+                <button
+                  key={pack.spins}
+                  onClick={() => {
+                    playClick();
+                    setSelectedPackage(pack);
+                    setShowPurchaseModal(true);
+                  }}
+                  className="bg-[#23133d] border border-purple-500/20 hover:border-amber-400/50 p-2 rounded-xl flex items-center justify-between transition-all active:scale-95 text-left"
+                >
+                  <div>
+                    <p className="text-xs font-black text-white">{pack.spins} Spin{pack.spins > 1 ? "s" : ""}</p>
+                    <p className="text-[9px] text-gray-400">Instant credit</p>
+                  </div>
+                  <span className="text-xs font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded border border-amber-400/20">
+                    ₵{pack.price}
+                  </span>
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-
-              <h3 className="font-bold text-xl mb-4">
-
-                Recent Winners
-
-              </h3>
-
-              <div className="space-y-3">
-                {winners.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center">
-                    No winners yet today.
-                  </p>
-                ) : (
-                  winners.map((winner) => (
-                    <Winner
-                      key={winner.id}
-                      name={winner.name}
-                      prize={winner.prize}
-                    />
-                  ))
-                )}
-              </div>
-
+          {/* RECENT LIVE WINNERS TICKER */}
+          <div className="bg-[#0e071a] rounded-xl p-2.5 border border-purple-950/60">
+            <div className="flex items-center gap-1.5 mb-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" /> Live Winners
             </div>
-
+            <div className="h-12 overflow-y-auto space-y-1 pr-1 text-[11px] text-gray-300">
+              {winners.length === 0 ? (
+                <p className="text-gray-500 text-center py-2">Waiting for next spin entry...</p>
+              ) : (
+                winners.map((winner) => (
+                  <div key={winner.id} className="flex justify-between items-center bg-purple-950/20 px-2 py-0.5 rounded">
+                    <span className="truncate max-w-[120px] text-gray-400">{winner.name}</span>
+                    <span className="font-bold text-amber-400">{winner.prize}</span>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
         </div>
 
       </div>
+
+      {/* MODAL WINDOWS CONTROLS */}
       {showPurchaseModal && selectedPackage && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-
-          <div className="bg-white rounded-3xl p-8 w-[420px] max-w-[95%] shadow-2xl">
-
-            <h2 className="text-2xl font-bold text-center mb-2">
-              🎰 Buy More Spins
-            </h2>
-
-            <p className="text-center text-gray-500 mb-6">
-              {selectedPackage.spins} Spin{selectedPackage.spins > 1 ? "s" : ""}
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1c0d35] border border-purple-500/30 rounded-3xl p-6 w-full max-w-[340px] text-white shadow-2xl">
+            <h2 className="text-lg font-black text-center mb-1">Confirm Purchase</h2>
+            <p className="text-center text-xs text-gray-400 mb-4">
+              Adding {selectedPackage.spins} Spin{selectedPackage.spins > 1 ? "s" : ""} to account
             </p>
 
-            <div className="bg-orange-50 rounded-xl p-4 mb-6 text-center">
-
-              <p className="text-sm text-gray-500">
-                Price
-              </p>
-
-              <p className="text-3xl font-bold text-orange-600">
-                ₵{selectedPackage.price}
-              </p>
-
-              <p className="mt-2 text-sm">
-                Wallet Balance
-              </p>
-
-              <p className="font-bold">
-                ₵{Number(userProfile?.walletBalance || 0).toLocaleString("en-GH")}
-              </p>
-
+            <div className="bg-[#110624] border border-purple-950 rounded-xl p-3 mb-4 text-center">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Total Price</p>
+              <p className="text-2xl font-black text-amber-400">₵{selectedPackage.price}</p>
             </div>
 
-            <button
-              onClick={buySpinsWithWallet}
-              disabled={buyingSpins}
-              className={`w-full py-3 rounded-xl font-bold transition ${
-                buyingSpins
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-orange-500 hover:bg-orange-600 text-white"
-              }`}
-            >
-              {buyingSpins ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Processing Payment...
-                </div>
-              ) : (
-                "💳 Pay with Wallet"
-              )}
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={buySpinsWithWallet}
+                disabled={buyingSpins}
+                className="w-full bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 font-black py-2.5 rounded-xl text-xs transition-all active:scale-95 disabled:opacity-50"
+              >
+                {buyingSpins ? "Processing..." : "💳 Pay From Wallet balance"}
+              </button>
 
-            <button
-              onClick={() => {
-                setShowPurchaseModal(false);
-                setSelectedPackage(null);
-              }}
-              className="w-full mt-3 border border-gray-300 py-3 rounded-xl hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-
+              <button
+                onClick={() => {
+                  setShowPurchaseModal(false);
+                  setSelectedPackage(null);
+                }}
+                className="w-full bg-purple-950 border border-purple-500/20 text-gray-300 py-2 rounded-xl text-xs hover:bg-purple-900 transition-all"
+              >
+                Go Back
+              </button>
+            </div>
           </div>
-
         </div>
       )}
+
       <RewardPopup
         open={popupOpen}
         prize={wonPrize}
         onClose={() => setPopupOpen(false)}
       />
-    </div>
-  );
-}
-
-function RewardCard({
-  icon,
-  title,
-  value,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  value: string;
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-      <div className="flex justify-center text-orange-500">
-        {icon}
-      </div>
-
-      <h3 className="font-bold mt-4">
-        {title}
-      </h3>
-
-      <p className="text-muted-foreground mt-2">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function Winner({
-  name,
-  prize,
-}: {
-  name: string;
-  prize: string;
-}) {
-  return (
-    <div className="flex justify-between border-b pb-2">
-      <span>{name}</span>
-
-      <span className="font-semibold text-orange-600">
-        {prize}
-      </span>
     </div>
   );
 }

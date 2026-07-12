@@ -46,7 +46,7 @@ const CATEGORIES = [
     label: "Games",
     icon: "🎮",
     desc: "Play and win rewards",
-    href: "/games",
+    href: "/spin-win",
   },
 
   {

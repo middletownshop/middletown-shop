@@ -527,6 +527,7 @@ export async function saveSpinResult(
   // 3. Give the reward
   switch (prize.type) {
     case "wallet":
+    
       await updateDoc(doc(db, "users", uid), {
         walletBalance: increment(prize.value),
       });
@@ -561,6 +562,12 @@ export async function saveSpinResult(
         break;
       }
 
+      case "spin":
+      await updateDoc(doc(db, "users", uid), {
+        availableSpins: increment(prize.value),
+      });
+      break;
+      
     case "lose":
       // Nothing to award.
       break;

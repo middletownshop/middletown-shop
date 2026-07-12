@@ -3,7 +3,7 @@ import { WheelPrize } from "@/types/game";
 export const WHEEL_PRIZES: WheelPrize[] = [
   {
     id: 0,
-    title: "₵0.50\nWallet",
+    title: "₵0.50\nCASH",
     type: "wallet",
     value: 0.5,
     color: "#22c55e",
@@ -19,6 +19,14 @@ export const WHEEL_PRIZES: WheelPrize[] = [
   },
   {
     id: 2,
+    title: "₵100\nCASH", // 🔥 Teaser Grand Prize
+    type: "wallet",
+    value: 100,
+    color: "#dc2626", // Eye-catching Crimson Red
+    probability: 0,   // 0% real probability
+  },
+  {
+    id: 3,
     title: "Try\nAgain",
     type: "lose",
     value: 0,
@@ -26,7 +34,7 @@ export const WHEEL_PRIZES: WheelPrize[] = [
     probability: 18,
   },
   {
-    id: 3,
+    id: 4,
     title: "5%\nCoupon",
     type: "coupon",
     value: 5,
@@ -34,15 +42,23 @@ export const WHEEL_PRIZES: WheelPrize[] = [
     probability: 12,
   },
   {
-    id: 4,
-    title: "₵1\nWallet",
+    id: 5,
+    title: "₵1\nCASH",
     type: "wallet",
     value: 1,
     color: "#10b981",
     probability: 10,
   },
   {
-    id: 5,
+    id: 6,
+    title: "₵50\nCASH", // 🔥 Teaser Mega Prize
+    type: "wallet",
+    value: 50,
+    color: "#e11d48", // Vibrant Rose Red
+    probability: 0,   // 0% real probability
+  },
+  {
+    id: 7,
     title: "100\nPoints",
     type: "points",
     value: 100,
@@ -50,7 +66,7 @@ export const WHEEL_PRIZES: WheelPrize[] = [
     probability: 8,
   },
   {
-    id: 6,
+    id: 8,
     title: "Free\nSpin",
     type: "spin",
     value: 1,
@@ -58,11 +74,11 @@ export const WHEEL_PRIZES: WheelPrize[] = [
     probability: 7,
   },
   {
-    id: 7,
-    title: "₵5\nWallet",
+    id: 9,
+    title: "₵5\nCASH",
     type: "wallet",
     value: 5,
     color: "#16a34a",
-    probability:  0.5,
+    probability: 0.5,
   },
 ];

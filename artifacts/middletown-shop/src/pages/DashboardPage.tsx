@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { collection, query, where, limit, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/AuthContext";
 import type { Order, Notification } from "@/lib/types";
 import OrderStatusBadge from "@/components/OrderStatusBadge";
-import { Package, Receipt, Bell, Wallet, ShoppingBag, BellRing } from "lucide-react";
+import { Package, Receipt, Bell, Wallet, ShoppingBag, BellRing, Gamepad2 } from "lucide-react";
 import { markNotificationRead } from "@/lib/firestore";
 
 export default function DashboardPage() {
@@ -15,7 +15,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    // where-only to avoid composite index; limit+sort client-side
     const q = query(collection(db, "orders"), where("customerId", "==", user.uid));
     return onSnapshot(q, snap => {
       const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Order));
@@ -26,7 +25,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    // where-only to avoid composite index; limit+sort client-side
     const q = query(collection(db, "notifications"), where("userId", "==", user.uid));
     return onSnapshot(q, snap => {
       const all = snap.docs.map(d => ({ id: d.id, ...d.data() } as Notification));
@@ -68,6 +66,31 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
           </div>
         ))}
+      </div>
+
+      {/* PREMIUM CHROME HIGHLIGHT: LUCKY SPIN HERO CARD */}
+      <div className="mb-6 bg-gradient-to-r from-amber-500 via-purple-600 to-indigo-700 rounded-2xl p-0.5 shadow-md">
+        <div className="bg-[#0f0a21] rounded-[14px] p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-3 text-center sm:text-left flex-col sm:flex-row">
+            <div className="text-3xl bg-amber-400/10 p-2.5 rounded-xl border border-amber-400/20 text-amber-400 animate-pulse">
+              🎡
+            </div>
+            <div>
+              <h3 className="text-sm font-black text-white tracking-wide uppercase flex items-center gap-1.5 justify-center sm:justify-start">
+                Lucky Spin Available! <span className="text-xs bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded-full font-extrabold animate-bounce">FREE</span>
+              </h3>
+              <p className="text-xs text-purple-200/70 mt-0.5">
+                Spin the premium wheel now to unlock up to ₵100 instantly!
+              </p>
+            </div>
+          </div>
+          <Link
+            to="/spin-win"
+            className="w-full sm:w-auto bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-500 hover:to-yellow-600 text-slate-950 text-xs font-black px-5 py-2.5 rounded-xl tracking-wider uppercase text-center shadow-lg transition-transform active:scale-95"
+          >
+            Play & Win
+          </Link>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -136,18 +159,27 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Quick actions */}
-      <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Quick actions (Includes updated responsive 5-column grid) */}
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
           { label: "Browse Products", href: "/products", icon: <ShoppingBag className="w-5 h-5" /> },
           { label: "My Orders", href: "/orders", icon: <Package className="w-5 h-5" /> },
+          { label: "Play Games", href: "/spin-win", icon: <Gamepad2 className="w-5 h-5 text-amber-500" />, highlight: true },
           { label: "Receipts", href: "/orders", icon: <Receipt className="w-5 h-5" /> },
           { label: "Track Order", href: "/orders", icon: <Package className="w-5 h-5" /> },
         ].map(action => (
-          <Link key={action.label} to={action.href}
-            className="flex flex-col items-center gap-2 p-4 bg-white border border-border rounded-xl hover:border-primary hover:shadow-sm transition-all text-center group">
-            <div className="text-muted-foreground group-hover:text-primary transition-colors">{action.icon}</div>
-            <span className="text-xs font-medium text-foreground group-hover:text-primary transition-colors">{action.label}</span>
+          <Link 
+            key={action.label} 
+            to={action.href}
+            className={`flex flex-col items-center gap-2 p-4 border rounded-xl hover:shadow-sm transition-all text-center group bg-white
+              ${action.highlight ? "border-amber-300 hover:border-amber-500 bg-amber-50/20" : "border-border hover:border-primary"}`}
+          >
+            <div className={`transition-colors ${action.highlight ? "text-amber-500 group-hover:text-amber-600" : "text-muted-foreground group-hover:text-primary"}`}>
+              {action.icon}
+            </div>
+            <span className={`text-xs font-bold transition-colors ${action.highlight ? "text-amber-700 group-hover:text-amber-900" : "text-foreground group-hover:text-primary"}`}>
+              {action.label}
+            </span>
           </Link>
         ))}
       </div>
