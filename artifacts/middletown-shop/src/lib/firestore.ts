@@ -35,7 +35,7 @@ export async function createUserProfile(uid: string, data: Partial<UserProfile>)
 
     rewardPoints: 0,
 
-    availableSpins: 10,
+    availableSpins: 1,
 
     lastSpin: null,
 

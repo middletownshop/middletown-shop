@@ -492,16 +492,21 @@ export default function WalletPage() {
       {tab === "momo" && (
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm rounded-xl p-6 space-y-5">
           <div>
-            <h3 className="font-bold text-lg text-slate-900 dark:text-white">Mobile Money Over-The-Counter</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Bypass third-party gateway clearing percentages via offline processing streams.</p>
+            <h3 className="font-bold text-lg text-slate-900 dark:text-white"> Deposit With Mobile Money </h3>
+            <p className="text-xs text-slate-400 mt-0.5">Pay directly using our verified offline payment options and avoid extra gateway charges.
+</p>
           </div>
 
           <div className="bg-blue-50/70 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 text-xs text-blue-900 dark:text-blue-300 space-y-1.5 leading-relaxed">
             <p className="font-bold text-blue-950 dark:text-blue-100">Execution Manual:</p>
-            <p>1. Transact your desired funding total to the verified Merchant address detail below.</p>
-            <p>2. Tap the WhatsApp validation routing clip to transmit payment logs directly onto customer clearing operations.</p>
+            <p>1. Send the amount you want to add to your wallet to the verified merchant account below.
+</p>
+             <p>2.Your account will be Credited After Proof of Payment.</p>
+            <p>3. Tap the WhatsApp validation routing clip to transmit payment logs directly onto customer clearing operations.</p>
           </div>
 
+         
+          
           <div className="bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 p-4 rounded-xl space-y-2 text-sm font-medium">
             <div className="flex justify-between border-b border-slate-200/50 dark:border-slate-700 pb-2">
               <span className="text-slate-400 text-xs">Operator Destination:</span>

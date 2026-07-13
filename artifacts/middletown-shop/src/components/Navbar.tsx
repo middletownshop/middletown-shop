@@ -59,12 +59,11 @@ export default function Navbar() {
       ? "Good Afternoon"
       : "Good Evening";
 
-  // Fixed execution sequence prevents component state tracking collisions
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanQuery = searchQuery.trim();
     if (cleanQuery) {
-      setMenuOpen(false); // Safeguard mobile context transitions
+      setMenuOpen(false);
       navigate(`/products?search=${encodeURIComponent(cleanQuery)}`);
     }
   };
@@ -132,15 +131,38 @@ export default function Navbar() {
       {/* Main Brand & Controls Matrix */}
       <div className="max-w-7xl mx-auto px-4 py-3.5 flex items-center justify-between gap-4">
 
-        {/* Dynamic Multi-Tone Logo Group */}
-        <Link to="/" className="flex-shrink-0 flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
-            <span className="text-white font-black text-base tracking-tighter">MT</span>
+        {/* Brand Logo & Dynamic Greeting Box Container */}
+        <div className="flex-shrink-0 flex items-center gap-3">
+          <Link to="/" className="group">
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
+              <span className="text-white font-black text-base tracking-tighter">MT</span>
+            </div>
+          </Link>
+
+          {/* Placed Greeting Box & Clock right here where MiddletownShop used to be */}
+          <div className="flex flex-col text-left">
+            <p className="text-xs font-bold text-foreground line-clamp-1">
+              {greeting}{userProfile?.displayName ? `, ${userProfile.displayName}` : "!"}
+            </p>
+            <p className="text-[10px] text-muted-foreground/90 font-medium flex items-center gap-1">
+              <Clock className="w-3 h-3 text-primary/70" />
+
+              {currentTime.toLocaleTimeString("en-GH", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+
+            <p className="text-[10px] text-muted-foreground/80 font-medium">
+              {currentTime.toLocaleDateString("en-GH", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
           </div>
-          <span className="font-black text-2xl tracking-tight hidden sm:block bg-gradient-to-r from-amber-500 via-rose-500 to-primary bg-clip-text text-transparent">
-            Middletown<span className="text-foreground font-light">Shop</span>
-          </span>
-        </Link>
+        </div>
 
         {/* Polished Inset Form Search Container (Desktop Only) */}
         <form onSubmit={handleSearch} className="flex-1 max-w-xl relative hidden md:block">
@@ -166,25 +188,13 @@ export default function Navbar() {
         {/* Dynamic Profile/Utility Actions Block */}
         <div className="flex items-center gap-2 sm:gap-3 ml-auto md:ml-0">
 
-          {/* Greeting Box Meta Metrics */}
+          {/* Conditional Wallet Section separated and remaining in the right block */}
           {user && userProfile && (
-            <div className="hidden lg:flex items-center gap-3 border border-border/60 bg-muted/30 px-3.5 py-1.5 rounded-2xl shadow-inner">
-              <div className="text-right">
-                <p className="text-xs font-bold text-foreground line-clamp-1">
-                  {greeting}, {userProfile.displayName}
-                </p>
-                <p className="text-[10px] text-muted-foreground/90 font-medium flex items-center gap-1 justify-end">
-                  <Clock className="w-3 h-3 text-primary/70" />
-                  {currentTime.toLocaleTimeString("en-GH", { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-              <div className="h-7 w-[1px] bg-border/80" />
-              <div className="flex flex-col items-start">
-                <span className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">Wallet</span>
-                <span className="text-sm font-black text-emerald-600">
-                  ₵{Number(userProfile.walletBalance || 0).toLocaleString("en-GH", { minimumFractionDigits: 2 })}
-                </span>
-              </div>
+            <div className="hidden lg:flex flex-col items-end border border-border/60 bg-muted/30 px-3.5 py-1.5 rounded-2xl shadow-inner">
+              <span className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">Wallet</span>
+              <span className="text-sm font-black text-emerald-600">
+                ₵{Number(userProfile.walletBalance || 0).toLocaleString("en-GH", { minimumFractionDigits: 2 })}
+              </span>
             </div>
           )}
 
@@ -315,7 +325,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Dedicated Standalone Row for Mobile Devices Search (Prevents inline crash layout) */}
+      {/* Dedicated Standalone Row for Mobile Devices Search */}
       <div className="block md:hidden px-4 pb-3">
         <form onSubmit={handleSearch} className="w-full relative">
           <div className="relative flex items-center bg-muted/60 rounded-xl border border-border/60 p-0.5">
