@@ -130,7 +130,7 @@ export default function BundleOrdersPage() {
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-200">
-              {userProfile?.role === "admin" ? "Purchase History" : "VIP Order Ledger"}
+              {userProfile?.role === "admin" ? "Purchase History" : "PURCASE HISTORY"}
             </h1>
             <p className="text-xs md:text-sm text-amber-500/70 font-medium tracking-wide mt-0.5 uppercase flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-amber-500" /> Track your data orders
@@ -215,7 +215,7 @@ export default function BundleOrdersPage() {
 
                   <div className="text-right">
                     <p className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">
-                      Remittance Net
+                      AMOUNT
                     </p>
                     <p className="font-black text-lg text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-500 tracking-tight">
                       GHS {Number(order.amountPaid || 0).toFixed(2)}
