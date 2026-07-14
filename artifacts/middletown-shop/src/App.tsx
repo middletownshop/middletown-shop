@@ -42,6 +42,7 @@ import AdminWithdrawals from "@/pages/admin/AdminWithdrawals";
 import AdminNotices from "@/pages/admin/AdminNotices";
 import DeliverySettings from "@/pages/admin/DeliverySettings";
 import SpinManagement from "@/pages/admin/SpinManagement";
+import FloatingWhatsApp from "@/components/FloatingWhatsApp";
 
 function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -81,6 +82,11 @@ export default function App() {
       <AuthProvider>
     
         <CartProvider>
+
+
+          <FloatingWhatsApp />
+
+    
           <Toaster
             position="top-right"
             toastOptions={{

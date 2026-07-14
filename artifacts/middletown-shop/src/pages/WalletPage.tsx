@@ -44,7 +44,7 @@ interface PaystackResponse {
 // Fee Configuration Constants
 const PAYSTACK_PERCENTAGE_FEE = 0.0195;
 const PAYSTACK_FIXED_FEE = 0.10;
-const MIN_DEPOSIT_GHS = 10; // Modified minimum floor limit bound
+const MIN_DEPOSIT_GHS = 1; // Modified minimum floor limit bound
 
 // Deterministic pricing formulas
 const calculateTotalPaystackAmount = (targetAmount: number): number => {
