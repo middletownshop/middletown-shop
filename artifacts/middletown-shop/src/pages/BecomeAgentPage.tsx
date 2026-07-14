@@ -197,7 +197,7 @@ export default function BecomeAgentPage() {
         </p>
 
         <h2 className="text-4xl font-black text-yellow-700 mt-2">
-          GHS 100
+          GHS 20
         </h2>
 
         <p className="text-sm mt-2 text-muted-foreground">
