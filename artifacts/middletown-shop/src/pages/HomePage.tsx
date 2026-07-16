@@ -22,6 +22,13 @@ const CATEGORIES = [
   },
 
   {
+    label: "My Wallet",
+    icon: "💰",
+    desc: "Deposit funds & manage your wallet",
+    href: "/wallet",
+  },
+  
+  {
     label: "Bundle Orders",
     icon: "📋",
     desc: "Track your bundle purchases",
@@ -63,7 +70,14 @@ const CATEGORIES = [
     desc: "Earn commissions on sales",
     href: "/agent/apply",
   },
- 
+
+  {
+    label: "My Coupons",
+    icon: "🎟️",
+    desc: "View your discount coupons",
+    href: "/my-coupons",
+  },
+  
 ];
 
 const BANNERS = [
