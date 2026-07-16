@@ -145,7 +145,7 @@ export default function ReceiptPage() {
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Receipt</p>
             <p className="font-bold text-foreground text-lg">{receipt.receiptNumber}</p>
             <p className="text-xs text-muted-foreground">
-              {receipt.createdAt?.toDate ? receipt.createdAt.toDate().toLocaleDateString("en-NG", { year: "numeric", month: "long", day: "numeric" }) : receipt.paidAt ? new Date(receipt.paidAt).toLocaleDateString() : "—"}
+              {(receipt as any).createdAt?.toDate ? (receipt as any).createdAt.toDate().toLocaleDateString("en-GH", { year: "numeric", month: "long", day: "numeric" }) : receipt.paidAt ? new Date(receipt.paidAt).toLocaleDateString("en-GH") : "—"}
             </p>
           </div>
         </div>

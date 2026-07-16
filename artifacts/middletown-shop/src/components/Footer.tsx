@@ -1,16 +1,14 @@
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
+import { LogoFull } from "@/components/Logo";
 
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300 mt-auto">
       <div className="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         <div>
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-7 h-7 bg-primary rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
-            </div>
-            <span className="text-white font-bold text-lg">Middletown Shop</span>
+          <div className="mb-3">
+            <LogoFull className="h-8" dark={true} />
           </div>
           <p className="text-sm text-gray-400 leading-relaxed">Ghana's trusted marketplace for physical products, digital services, data bundles, and more.</p>
         </div>

@@ -9,6 +9,7 @@ import { auth } from "@/lib/firebase";
 import { createUserProfile, getUserProfile } from "@/lib/firestore";
 import toast from "react-hot-toast";
 import { Eye, EyeOff, Mail, Lock, User, ShoppingBag } from "lucide-react";
+import { LogoIcon, LogoFull } from "@/components/Logo";
 
 type Tab = "login" | "register" | "reset";
 
@@ -76,11 +77,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
       {/* Left branding panel */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-700 to-blue-900 text-white flex-col justify-center px-12">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center">
-            <ShoppingBag className="w-7 h-7 text-blue-700" />
-          </div>
-          <span className="text-2xl font-bold">Middletown Shop</span>
+        <div className="mb-8">
+          <LogoFull className="h-12" dark={true} />
         </div>
         <h2 className="text-4xl font-bold mb-4 leading-tight">Ghana's Trusted Marketplace</h2>
         <p className="text-blue-200 text-lg mb-8">Physical products, digital services, data bundles, airtime, and more — all in one place.</p>
@@ -105,11 +103,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8 bg-background">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">M</span>
-            </div>
-            <span className="font-bold text-xl text-primary">Middletown Shop</span>
+          <div className="mb-8 lg:hidden flex justify-center">
+            <LogoFull className="h-10" />
           </div>
 
           {/* Tabs */}

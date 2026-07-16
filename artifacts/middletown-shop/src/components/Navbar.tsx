@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { LogoIcon } from "@/components/Logo";
 import { 
   ShoppingCart, 
   Search, 
@@ -133,10 +134,8 @@ export default function Navbar() {
 
         {/* Brand Logo & Dynamic Greeting Box Container */}
         <div className="flex-shrink-0 flex items-center gap-3">
-          <Link to="/" className="group">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-primary/20 group-hover:scale-105 transition-transform duration-300">
-              <span className="text-white font-black text-base tracking-tighter">MT</span>
-            </div>
+          <Link to="/" className="group flex-shrink-0">
+            <LogoIcon className="w-10 h-10 group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
           </Link>
 
           {/* Placed Greeting Box & Clock right here where MiddletownShop used to be */}

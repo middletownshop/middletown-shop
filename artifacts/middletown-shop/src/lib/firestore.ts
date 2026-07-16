@@ -57,7 +57,7 @@ export async function getAllUsers(): Promise<UserProfile[]> {
   return snap.docs.map(d => d.data() as UserProfile);
 }
 
-export async function getUserNotifications(userId: string) {
+export async function getUserNotifications(userId: string): Promise<any[]> {
   const q = query(
     collection(db, "notifications"),
     where("userId", "==", userId),

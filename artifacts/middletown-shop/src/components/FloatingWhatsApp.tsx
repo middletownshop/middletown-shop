@@ -6,30 +6,8 @@ export default function FloatingWhatsApp() {
   return (
     <>
       {/* Neon glow animation */}
-      <style>
-        {`
-          @keyframes neonPulse {
-            0% {
-              box-shadow:
-                0 0 10px #25D366,
-                0 0 20px #25D366,
-                0 0 40px #25D366;
-            }
-            50% {
-              box-shadow:
-                0 0 20px #25D366,
-                0 0 40px #25D366,
-                0 0 70px #25D366;
-            }
-            100% {
-              box-shadow:
-                0 0 10px #25D366,
-                0 0 20px #25D366,
-                0 0 40px #25D366;
-            }
-          }
-        `}
-      </style>
+    
+
 
       <a
         href={`https://wa.me/${phone}`}
