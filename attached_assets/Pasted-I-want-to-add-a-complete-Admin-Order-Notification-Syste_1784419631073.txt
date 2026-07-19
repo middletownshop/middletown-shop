@@ -1,0 +1,285 @@
+I want to add a complete **Admin Order Notification System** to my existing React + TypeScript + Firebase application.
+
+## IMPORTANT
+
+Do NOT change any existing UI or business logic unless it is required for notifications.
+
+Do NOT break any existing functionality.
+
+Use Firebase Firestore and React.
+
+Use real-time listeners (`onSnapshot`) instead of polling.
+
+---
+
+# Goal
+
+Whenever a customer performs any important action, the admin should immediately receive an in-app notification.
+
+The notification should appear automatically without refreshing the page.
+
+---
+
+# Firestore Collection
+
+Create a new collection:
+
+```
+adminNotifications
+```
+
+Each notification document should contain:
+
+```
+title
+message
+type
+referenceId
+customerId
+customerName
+customerEmail
+amount
+read
+createdAt
+```
+
+Example:
+
+```
+title: "New Product Order"
+
+message: "Francis purchased Samsung A15"
+
+type: "product_order"
+
+referenceId: "<orderId>"
+
+customerId: "<uid>"
+
+customerName: "Francis"
+
+customerEmail: "francis@email.com"
+
+amount: 1200
+
+read: false
+
+createdAt: serverTimestamp()
+```
+
+---
+
+# Automatically create notifications for:
+
+## Product Orders
+
+When createOrder() succeeds:
+
+Create
+
+```
+New Product Order
+```
+
+---
+
+## Bundle Orders
+
+When createBundleOrder() succeeds:
+
+Create
+
+```
+New Bundle Order
+```
+
+---
+
+## Wallet Deposits
+
+When wallet deposit succeeds:
+
+Create
+
+```
+New Wallet Deposit
+```
+
+---
+
+## Withdrawal Requests
+
+When requestWalletWithdrawal() succeeds:
+
+Create
+
+```
+New Withdrawal Request
+```
+
+---
+
+## Agent Applications
+
+When a user applies to become an agent:
+
+Create
+
+```
+New Agent Application
+```
+
+---
+
+# Admin UI
+
+Use the existing admin area.
+
+Add a notification bell.
+
+Show a red badge containing the number of unread notifications.
+
+Example:
+
+```
+🔔 5
+```
+
+---
+
+# Notification Panel
+
+When clicking the bell, open a dropdown.
+
+Display newest first.
+
+Each notification should display:
+
+Title
+
+Message
+
+Time
+
+Unread indicator
+
+Example:
+
+```
+🔵 New Product Order
+
+Francis purchased Samsung A15
+
+Just now
+```
+
+```
+New Bundle Order
+
+Ama bought MTN 10GB
+
+5 mins ago
+```
+
+---
+
+# Real Time
+
+Use Firestore onSnapshot().
+
+Whenever a new notification document is created:
+
+* update instantly
+* no page refresh
+* newest notification appears at the top
+* unread badge updates automatically
+
+---
+
+# Mark as Read
+
+When admin opens a notification:
+
+```
+read = true
+```
+
+Unread badge should immediately decrease.
+
+---
+
+# Notification Sound
+
+Play a short notification sound ONLY when a brand new notification arrives.
+
+Do NOT play sounds when:
+
+* page loads
+* admin refreshes
+* old notifications are loaded
+
+Only play for newly created notifications after the listener is active.
+
+---
+
+# Firestore Queries
+
+Order by:
+
+```
+createdAt desc
+```
+
+Limit:
+
+```
+50 notifications
+```
+
+---
+
+# Performance
+
+Do not use polling.
+
+Do not use setInterval.
+
+Use only one Firestore listener.
+
+Clean up listeners properly.
+
+---
+
+# Security
+
+Only admins should be able to read the adminNotifications collection.
+
+Customers must never be able to read or modify it.
+
+---
+
+# Code Quality
+
+Use TypeScript.
+
+Reuse existing Firestore helper functions where possible.
+
+Keep the code modular.
+
+Create helper functions if necessary.
+
+---
+
+# Final Output
+
+At the end, list:
+
+1. Every file modified.
+
+2. Every new file created.
+
+3. Every Firestore function added.
+
+4. Every route or component updated.
+
+5. Explain how to test the notification system step by step.

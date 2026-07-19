@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogoIcon } from "@/components/Logo";
+import AdminNotificationBell from "@/components/AdminNotificationBell";
 import { 
   ShoppingCart, 
   Search, 
@@ -202,6 +203,9 @@ export default function Navbar() {
             <Signal className="w-4 h-4 text-emerald-500 animate-pulse" />
             <span>Bundles</span>
           </Link>
+
+          {/* Admin Notification Bell */}
+          {isAdmin && <AdminNotificationBell />}
 
           {/* Luxury Cart Component */}
           <Link 

@@ -1,12 +1,13 @@
 import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, setDoc, serverTimestamp, Timestamp, increment,
+  onSnapshot, writeBatch,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type {
   Product, Order, OrderItem, OrderStatus, Receipt, ShippingInfo, UserProfile,
   BundleOrder, WalletTransaction, WithdrawalRequest, AgentApplication, AgentCommission,
-  DataBundle, NetworkProvider, Complaint, ComplaintReply,
+  DataBundle, NetworkProvider, Complaint, ComplaintReply, AdminNotification, AdminNotificationType,
 } from "./types";
 import { WheelPrize } from "@/types/game";
 
@@ -172,6 +173,18 @@ export async function createOrder(data: {
     orderId: ref.id,
     updates: [{ status: "pending", message: "Order placed", timestamp: Timestamp.now() }],
   });
+  const firstItem = data.items[0]?.name ?? "item(s)";
+  const itemSuffix = data.items.length > 1 ? ` +${data.items.length - 1} more` : "";
+  createAdminNotification({
+    title: "New Product Order",
+    message: `${data.customerName} ordered ${firstItem}${itemSuffix}`,
+    type: "product_order",
+    referenceId: ref.id,
+    customerId: data.customerId,
+    customerName: data.customerName,
+    customerEmail: data.customerEmail,
+    amount: data.totalAmount,
+  }).catch(() => {});
   return ref.id;
 }
 
@@ -363,6 +376,17 @@ export async function createBundleOrder(data: Omit<BundleOrder, "id" | "bundleOr
   const ref = await addDoc(collection(db, "bundleOrders"), {
     ...data, bundleOrderId, status: "pending", paymentVerified: false, createdAt: serverTimestamp(),
   });
+  const d = data as any;
+  createAdminNotification({
+    title: "New Bundle Order",
+    message: `${d.customerName ?? "A customer"} ordered ${d.bundleName ?? "a data bundle"}`,
+    type: "bundle_order",
+    referenceId: ref.id,
+    customerId: d.customerId ?? "",
+    customerName: d.customerName ?? "",
+    customerEmail: d.customerEmail ?? "",
+    amount: d.amount ?? d.totalAmount,
+  }).catch(() => {});
   return ref.id;
 }
 
@@ -393,6 +417,16 @@ export async function addWalletDeposit(userId: string, amount: number, reference
   await addDoc(collection(db, "walletTransactions"), {
     userId, type: "deposit", amount, description, reference, status: "completed", createdAt: serverTimestamp(),
   });
+  createAdminNotification({
+    title: "New Wallet Deposit",
+    message: `Wallet topped up with ₵${amount.toFixed(2)} (ref: ${reference})`,
+    type: "wallet_deposit",
+    referenceId: reference,
+    customerId: userId,
+    customerName: "Customer",
+    customerEmail: "",
+    amount,
+  }).catch(() => {});
 }
 
 export async function requestWalletWithdrawal(data: {
@@ -406,6 +440,16 @@ export async function requestWalletWithdrawal(data: {
     description: `Withdrawal to ${data.bankName} - ${data.accountNumber}`,
     reference: ref.id, status: "pending", createdAt: serverTimestamp(),
   });
+  createAdminNotification({
+    title: "New Withdrawal Request",
+    message: `${data.userName} requested ₵${data.amount.toFixed(2)} to ${data.bankName}`,
+    type: "withdrawal_request",
+    referenceId: ref.id,
+    customerId: data.userId,
+    customerName: data.userName,
+    customerEmail: data.userEmail,
+    amount: data.amount,
+  }).catch(() => {});
   return ref.id;
 }
 
@@ -433,6 +477,15 @@ export async function submitAgentApplication(data: {
   location: string; businessName: string; idType: string; idNumber: string;
 }): Promise<string> {
   const ref = await addDoc(collection(db, "agentApplications"), { ...data, status: "pending", createdAt: serverTimestamp() });
+  createAdminNotification({
+    title: "New Agent Application",
+    message: `${data.userName} applied to become an agent (${data.businessName})`,
+    type: "agent_application",
+    referenceId: ref.id,
+    customerId: data.userId,
+    customerName: data.userName,
+    customerEmail: data.userEmail,
+  }).catch(() => {});
   return ref.id;
 }
 
@@ -638,4 +691,48 @@ export async function addAvailableSpins(
   await updateDoc(userRef, {
     availableSpins: current + amount,
   });
+}
+
+// ─── Admin Notifications ───────────────────────────────────────────────────────
+
+async function createAdminNotification(data: {
+  title: string;
+  message: string;
+  type: AdminNotificationType;
+  referenceId: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  amount?: number;
+}): Promise<void> {
+  await addDoc(collection(db, "adminNotifications"), {
+    ...data,
+    read: false,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export function subscribeToAdminNotifications(
+  callback: (notifications: AdminNotification[]) => void
+): () => void {
+  const q = query(
+    collection(db, "adminNotifications"),
+    orderBy("createdAt", "desc"),
+    limit(50)
+  );
+  return onSnapshot(q, (snap) => {
+    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() } as AdminNotification));
+    callback(items);
+  });
+}
+
+export async function markAdminNotificationRead(id: string): Promise<void> {
+  await updateDoc(doc(db, "adminNotifications", id), { read: true });
+}
+
+export async function markAllAdminNotificationsRead(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const batch = writeBatch(db);
+  ids.forEach((id) => batch.update(doc(db, "adminNotifications", id), { read: true }));
+  await batch.commit();
 }

@@ -246,3 +246,24 @@ export interface Complaint {
   replies: ComplaintReply[];
   createdAt: Timestamp;
 }
+
+export type AdminNotificationType =
+  | "product_order"
+  | "bundle_order"
+  | "wallet_deposit"
+  | "withdrawal_request"
+  | "agent_application";
+
+export interface AdminNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: AdminNotificationType;
+  referenceId: string;
+  customerId: string;
+  customerName: string;
+  customerEmail: string;
+  amount?: number;
+  read: boolean;
+  createdAt: Timestamp;
+}
