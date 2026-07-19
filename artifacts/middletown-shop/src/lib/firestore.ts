@@ -695,7 +695,7 @@ export async function addAvailableSpins(
 
 // ─── Admin Notifications ───────────────────────────────────────────────────────
 
-async function createAdminNotification(data: {
+export async function createAdminNotification(data: {
   title: string;
   message: string;
   type: AdminNotificationType;

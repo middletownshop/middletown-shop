@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 
 import { auth } from "@/lib/firebase";
+import { createAdminNotification } from "@/lib/firestore";
 
 import { db } from "@/lib/firebase";
 
@@ -211,7 +212,18 @@ export default function PaystackSuccess() {
           "ORDER CREATED:",
           orderRef.id
         );
-             
+
+        createAdminNotification({
+          title: "New Bundle Order",
+          message: `${purchase.name || "A customer"} purchased ${purchase.bundle?.network || ""} ${purchase.bundle?.data || ""}`.trim(),
+          type: "bundle_order",
+          referenceId: orderRef.id,
+          customerId: purchase.uid || "",
+          customerName: purchase.name || "",
+          customerEmail: purchase.email || "",
+          amount: purchase.amount || 0,
+        }).catch(() => {});
+
         // Create receipt
         console.log(
           "BEFORE RECEIPT WRITE"

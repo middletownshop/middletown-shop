@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { getBundlePrice } from "@/lib/bundlePricing";
+import { createAdminNotification } from "@/lib/firestore";
 import { useState, useEffect } from "react";
 import {
   collection,
@@ -517,6 +518,17 @@ export default function Shop() {
         status: "completed",
         timestamp: serverTimestamp(),
       });
+
+      createAdminNotification({
+        title: "New Bundle Order",
+        message: `${profile.displayName || "Customer"} purchased ${selectedBundle.network} ${selectedBundle.data}`,
+        type: "bundle_order",
+        referenceId: orderRef.id,
+        customerId: user.uid,
+        customerName: profile.displayName || "Customer",
+        customerEmail: profile.email || "",
+        amount: finalPrice,
+      }).catch(() => {});
 
       const receiptRef = await addDoc(collection(db, "receipts"), {
         orderId: orderRef.id,
