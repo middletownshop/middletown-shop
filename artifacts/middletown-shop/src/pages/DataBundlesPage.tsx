@@ -305,7 +305,10 @@ function PhoneModal({
               }}
             >
               {loading ? (
-                "Processing..."
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Processing Payment...
+                </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Wallet className="h-4 w-4" />
