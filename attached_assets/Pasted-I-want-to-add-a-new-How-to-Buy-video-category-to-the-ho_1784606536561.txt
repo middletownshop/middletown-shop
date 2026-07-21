@@ -1,0 +1,201 @@
+I want to add a new **"How to Buy"** video category to the homepage of my Middletown Shop application.
+
+## Goal
+
+Add a new homepage card that takes users to a page containing tutorial videos explaining how to use the app.
+
+This page is for instructional videos only.
+
+---
+
+## Homepage
+
+Add a new category card alongside the existing homepage categories.
+
+Label:
+
+```text
+🎥 How to Buy
+```
+
+Description:
+
+```text
+Watch tutorials and learn how to use Middletown Shop
+```
+
+Route:
+
+```text
+/how-to-buy
+```
+
+Use the same design, size, hover effects, and animations as the other homepage category cards.
+
+---
+
+## Create a New Page
+
+Create a new page:
+
+```text
+src/pages/HowToBuyPage.tsx
+```
+
+The page should include:
+
+* Large page title:
+
+  * 🎥 How to Buy
+* Short introduction:
+
+  * "Watch our quick tutorials to learn how to shop, buy bundles, use your wallet, and redeem coupons."
+
+Use the same styling as the rest of the app.
+
+---
+
+## Video Sections
+
+Create separate cards for each tutorial.
+
+Examples:
+
+### 🛒 How to Buy Products
+
+Description:
+
+```text
+Learn how to order products from Middletown Shop.
+```
+
+---
+
+### 📶 How to Buy Data Bundles
+
+Description:
+
+```text
+Watch how to purchase MTN, Telecel and AirtelTigo bundles.
+```
+
+---
+
+### 💰 How to Top Up Your Wallet
+
+Description:
+
+```text
+Learn how to deposit money into your wallet.
+```
+
+---
+
+### 🎁 How to Use Coupons
+
+Description:
+
+```text
+See how to apply coupons during checkout.
+```
+
+---
+
+### 🎡 How Spin & Win Works
+
+Description:
+
+```text
+Learn how the Spin & Win game works and how rewards are earned.
+```
+
+---
+
+## Video Player
+
+Each tutorial card should contain a modern HTML5 video player.
+
+Do NOT use YouTube.
+
+Do NOT use any third-party embedded player.
+
+Use the browser's built-in HTML5 video player.
+
+Example:
+
+```tsx
+<video
+  controls
+  preload="metadata"
+  className="w-full rounded-xl"
+>
+  <source src="/videos/how-to-buy-products.mp4" type="video/mp4" />
+  Your browser does not support video playback.
+</video>
+```
+
+For now, use placeholder video paths inside:
+
+```text
+public/videos/
+```
+
+Example files:
+
+```text
+public/videos/how-to-buy-products.mp4
+public/videos/how-to-buy-bundles.mp4
+public/videos/how-to-topup-wallet.mp4
+public/videos/how-to-use-coupons.mp4
+public/videos/how-spin-win-works.mp4
+```
+
+The videos can be missing for now; I will upload them later.
+
+---
+
+## Responsive Design
+
+The page must work well on:
+
+* Desktop
+* Tablet
+* Mobile
+
+On desktop, display tutorial cards in a responsive grid.
+
+On mobile, stack them vertically.
+
+---
+
+## Navigation
+
+Add the new route to App.tsx:
+
+```text
+/how-to-buy
+```
+
+It should be a public page so anyone can view the tutorials.
+
+---
+
+## Code Quality
+
+* Reuse existing page layout components.
+* Match the current Middletown Shop theme.
+* Use Tailwind CSS.
+* Keep the code modular and clean.
+* Do not modify unrelated pages.
+
+---
+
+## Final Report
+
+After completing the work, list:
+
+1. All files created.
+2. All files modified.
+3. Where the new homepage category was added.
+4. Where the new route was added.
+5. Where I should upload my MP4 tutorial videos inside the project.

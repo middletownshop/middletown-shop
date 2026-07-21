@@ -12,6 +12,7 @@ import NotificationsPage from "@/pages/NotificationsPage";
 import SpinWinPage from "@/pages/SpinWinPage";
 import MyCouponsPage from "@/pages/MyCouponsPage";
 import HomePage from "@/pages/HomePage";
+import HowToBuyPage from "@/pages/HowToBuyPage";
 import LoginPage from "@/pages/LoginPage";
 import ProductsPage from "@/pages/ProductsPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
@@ -191,6 +192,7 @@ export default function App() {
             
             {/* Public routes */}
             <Route path="/" element={<ShopLayout><HomePage /></ShopLayout>} />
+            <Route path="/how-to-buy" element={<ShopLayout><HowToBuyPage /></ShopLayout>} />
             <Route path="/products" element={<ShopLayout><ProductsPage /></ShopLayout>} />
             <Route path="/products/:id" element={<ShopLayout><ProductDetailPage /></ShopLayout>} />
             <Route path="/cart" element={<ShopLayout><CartPage /></ShopLayout>} />

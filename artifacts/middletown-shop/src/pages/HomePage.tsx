@@ -77,7 +77,13 @@ const CATEGORIES = [
     desc: "View your discount coupons",
     href: "/my-coupons",
   },
-  
+
+  {
+    label: "How to Buy",
+    icon: "🎥",
+    desc: "Watch tutorials and learn how to use Middletown Shop",
+    href: "/how-to-buy",
+  },
 ];
 
 const BANNERS = [
